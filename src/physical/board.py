@@ -1,0 +1,121 @@
+"""Module holding Board and Move classes.
+All row values are 0-indexed,
+so no matter what part of the engine you're in (unless it's user-facing),
+row 7 is the equivalent of real-life row 8."""
+
+from pprint import pprint
+from enum import Enum
+
+
+class Square:
+    """One square on the board.
+
+    # Methods
+
+    __init__(self, col: str, row: int)
+    Col is a regular board column (a - h). Row is a zero-indexed row. So, what GothamChess would call H8 would be Square(\"h\", 7)."""
+
+    def __init__(self, col: str, row: int):
+        self.col = col
+        self.row = row
+        self.piece: Piece | None = None
+
+
+class PieceColor(Enum):
+    """Enum representing colors. BLACK is 0 and WHITE is 1. It probably doesn't even need a docstring. Bye!"""
+    BLACK = 0
+    WHITE = 1
+
+
+class PieceType(Enum):
+    """Enum representing types (Bishop, Queen, King, etc).
+
+    # Values
+
+    PAWN = 1
+    KNIGHT = 3
+    BISHOP = 3.2 because I personally like bishops more than knights
+    ROOK = 5
+    QUEEN = 9
+    KING = 39 because all other  together are 39 and the king is worth the game.
+    """
+    PAWN = 1
+    KNIGHT = 3
+    BISHOP = 3.2
+    ROOK = 5
+    QUEEN = 9
+    KING = 39
+
+
+class Piece:
+    """Class representing a on the 
+
+    # Methods
+
+    __init__(self, ptype: PieceType, color: PieceColor, location: Square)
+    Pretty self-explanatory.
+
+    # Attributes
+
+    ptype: PieceType - The type of the piece
+    color: PieceColor - The color of the piece
+    location: Square - The square the is on
+    """
+    
+    def __init__(self, ptype: PieceType, color: PieceColor, location: Square):
+        self.ptype = ptype
+        self.color = color
+        self.location = location
+
+
+class Board:
+    """Class to represent a chess board.
+    Automatically populates with 8 lettered columns of 8 squares.
+    
+    # Methods
+
+    __init__(self, default_pos: bool=True)
+    If default_pos is True, a stock starting position is automatically set up.
+
+    __getitem__(self, col_name: str) -> list[Square]
+    Takes a column name and returns a list of squares."""
+
+    def __init__(self, default_pos: bool=True):
+        # Set up 8 * 8 board with dict to represent lettered columns
+        self.squares: dict[str, list[Square]] = {}
+        for col in "abcdefgh":
+            col_list = []
+            for row in range(8):
+                col_list.append(Square(col, row))
+            self.squares[col] = col_list
+        pprint(self.squares)
+
+        if default_pos:
+            self.set_up_game_board()
+
+    def __getitem__(self, col_name: str) -> list[Square]:
+        if not isinstance(col_name, str) or len(col_name) != 1:
+            raise TypeError("col_name is not a single-letter string.")
+        return self.squares[col_name]
+
+    def set_up_game_board(self):
+        self.prep_column("a", PieceType.ROOK)
+        self.prep_column("h", PieceType.ROOK)
+        self.prep_column("b", PieceType.KNIGHT)
+        self.prep_column("g", PieceType.KNIGHT)
+        self.prep_column("c", PieceType.BISHOP)
+        self.prep_column("c", PieceType.BISHOP)
+        self.prep_column("d", PieceType.QUEEN)
+        self.prep_column("e", PieceType.KING)
+
+    def prep_column(self, col_name: str, ptype: PieceType):
+        col = self[col_name]
+        col[0].piece = Piece(ptype, PieceColor.WHITE, col[0])
+        col[7].piece = Piece(ptype, PieceColor.BLACK, col[7])
+        add_pawns(col)
+    
+
+def add_pawns(col: list[Square]):
+    col[1].piece = Piece(PieceType.PAWN, PieceColor.WHITE, col[1])
+    col[6].piece = Piece(PieceType.PAWN, PieceColor.BLACK, col[6])
+
