@@ -97,7 +97,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     if col_num > 0 and game[letters[col_num - 1]][loc.row + direction].piece != None:
         moves.append(Move(loc.col, loc.row, letters[col_num - 1], loc.row + direction))
     #right diagonal
-    if col_num < 7:
+    if col_num < 7 and game[letters[col_num + 1]][loc.row + direction].piece != None:
         moves.append(Move(loc.col, loc.row, letters[col_num + 1], loc.row + direction))
 
     return moves

@@ -7,4 +7,5 @@ game = physical.board.Board()
 
 print(game["e"][1].piece)
 pprint(physical.movement.potential_moves(game["e"][1].piece, game))
+pprint(physical.movement.potential_moves(game["e"][6].piece, game))
 
