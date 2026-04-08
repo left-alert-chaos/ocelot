@@ -3,10 +3,10 @@ Moves, locations, piece types, the works.
 
 # Modules
 
-board
+## board
 Holds Board() class and Piece() class and piece types
 
-movement
+## movement
 Holds Move() type.
 """
 
