@@ -1,7 +1,15 @@
-"""This file allows for simple testing of other files. It has a few test functions that can be used as unit tests.
+"""An ultra-simple testing framework, because I didn't want to learn a real one for this project.
 
-It's kinda sloppy, but tests are performed by importing the repective module and running test_function() on one of it's funtions or a wrapping lambda."""
-import physical
+# Functions
+
+## test_function(func: types.FunctionType, expected_result, name: str="") -> bool
+Why is everything so self-explanatory?
+"""
+# be nice and allow importing of other modules so I don't have to write this more than I have to
+import os
+import sys
+sys.path.append(os.path.dirname(__file__) + "/..")
+print(os.path.dirname(__file__) + "..")
 import types
 
 
@@ -24,9 +32,4 @@ def test_function(func: types.FunctionType, expected_result, name: str="") -> bo
     else:
         print(f"Function test '{name}' succeeded!")
     return not fail
-
-
-game = physical.board.Board()
-move = physical.board.Move("b", 5, "c", 4)
-test_function(lambda: game.perform(move), None, "Illegal move")
 

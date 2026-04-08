@@ -1,3 +1,20 @@
+"""Module that holds anything for moves.
+
+# Classes
+
+## Move
+Represents a single move on a board.
+
+## MoveException(Exception)
+Error for when moves fail.
+
+# Functions
+
+## potential_moves(piece: board.Piece, game: board.Board) -> list[Move]
+Finds potential moves for pieces. Does not find only legal moves; doesn't skip pinned pieces and doesn't skip moves that don't end check.
+
+## pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]
+Dependency of potential_moves(). Same shtick, but only for pawns."""
 import board
 import copy
 
@@ -7,11 +24,15 @@ class Move:
 
     # Methods
 
-    __init__(self, from_col: str, from_row: int, to_col: str, to_row: int)
+    ## __init__(self, from_col: str, from_row: int, to_col: str, to_row: int)
     Pretty self-explanatory.
 
-    perform_on(self, game: board.Board)
-    Checks whether a piece is on from square. If there isn't, raises and exception. Else, moves the piece."""
+    ## perform_on(self, game: board.Board)
+    Checks whether a piece is on from square. If there isn't, raises an exception. Else, moves the piece.
+
+    ## is_illegal(self, game: board.Board)
+    Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
+    """
 
     def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int):
         self.from_col = from_col
@@ -29,7 +50,17 @@ class Move:
         #maybe check if it's a capture?
 
         to_square.piece = copy.deepcopy(from_square.piece)
+        to_square.piece.has_moved = True
         from_square.piece = None
+
+    def is_illegal(self, game: board.Board) -> bool:
+        return False
+
+    def __str__(self) -> str:
+        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation)"
+
+    def __repr__(self) -> str:
+        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation)"
 
 
 class MoveException(Exception):
@@ -37,4 +68,37 @@ class MoveException(Exception):
     
     def __init__(self, message: str):
         super().__init__(message)
+
+
+def potential_moves(piece: board.Piece, game: board.Board) -> list[Move]:
+    match piece.ptype:
+        case board.PieceType.PAWN:
+            return pawn_moves(piece, game)
+        case _:
+            return []
+
+
+def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
+    direction = 1 if piece.color == board.PieceColor.WHITE else -1
+    moves = []
+    loc = piece.location
+    
+    #one square push
+    moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction))
+
+    #two square push
+    if not piece.has_moved:
+        moves.append(Move(loc.col, loc.row, loc.col, loc.row + (direction * 2)))
+
+    #diagonals
+    letters = "abcdefgh"
+    col_num = letters.index(loc.col)
+    #left diagonal
+    if col_num > 0 and game[letters[col_num - 1]][loc.row + direction].piece != None:
+        moves.append(Move(loc.col, loc.row, letters[col_num - 1], loc.row + direction))
+    #right diagonal
+    if col_num < 7:
+        moves.append(Move(loc.col, loc.row, letters[col_num + 1], loc.row + direction))
+
+    return moves
 

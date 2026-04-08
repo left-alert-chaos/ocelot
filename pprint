@@ -21,14 +21,7 @@ class Square:
         self.piece: Piece | None = None
 
     def __str__(self) -> str:
-        return f"Square {self.col}{self.row} (0-indexed; {self.col}{self.row + 1} in standard notation)"
-
-    def __repr__(self) -> str:
-        return f"Square {self.col}{self.row} (0-indexed; {self.col}{self.row + 1} in standard notation)"
-
-
-def col_row(square: Square) -> tuple[str, int]:
-    return (square.col, square.row)
+        return f"Square {self.col}{self.row} (0-indexed; {self.col}{self.row + 1} in standard noos.path.dirname(__file__) + "..itation)"
 
 
 class PieceColor(Enum):
@@ -76,10 +69,6 @@ class Piece:
         self.ptype = ptype
         self.color = color
         self.location = location
-        self.has_moved = False
-
-    def __str__(self) -> str:
-        return f"{self.color.name} {self.ptype.name} on {self.location}"
 
 
 class Board:
