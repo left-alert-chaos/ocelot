@@ -13,8 +13,8 @@ Error for when moves fail.
 ## potential_moves(piece: board.Piece, game: board.Board) -> list[Move]
 Finds potential moves for pieces. Does not find only legal moves; doesn't skip pinned pieces and doesn't skip moves that don't end check.
 
-## pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]
-Dependency of potential_moves(). Same shtick, but only for pawns."""
+## <piece>_moves(piece: board.Piece, game: board.Board) -> list[Move]
+Dependency of potential_moves(). Same shtick, but only for the given piece."""
 import board
 import copy
 
@@ -74,6 +74,8 @@ def potential_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     match piece.ptype:
         case board.PieceType.PAWN:
             return pawn_moves(piece, game)
+        case board.PieceType.ROOK:
+            return rook_moves(piece, game)
         case _:
             return []
 
@@ -102,3 +104,27 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 
     return moves
 
+
+def rook_moves(piece: board.Piece, game: board.Board) -> list[Move]:
+    moves = []
+    loc = piece.location
+    row = loc.row
+    col = loc.col
+    letters = "abcdefgh"
+    col_num = letters.index(col)
+    
+    #move right
+    peek_col_num = copy.copy(col_num + 1)
+    while peek_col_num < 8:
+        peek_piece = game[letters[peek_col_num]][row].piece
+        temp_move = Move(col, row, letters[peek_col_num], row)
+        if peek_piece == None:
+            moves.append(temp_move)
+        elif peek_piece.color != piece.color:
+            moves.append(temp_move)
+            break
+        else:
+            break
+        peek_col_num += 1
+
+    return moves

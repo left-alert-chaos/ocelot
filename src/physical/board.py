@@ -2,7 +2,6 @@
 All row values are 0-indexed,
 so no matter what part of the engine you're in (unless it's user-facing),
 row 7 is the equivalent of real-life row 8."""
-
 from pprint import pprint
 from enum import Enum
 
@@ -81,6 +80,9 @@ class Piece:
     def __str__(self) -> str:
         return f"{self.color.name} {self.ptype.name} on {self.location}"
 
+    def __repr__(self) -> str:
+        return f"{self.color.name} {self.ptype.name} on {self.location}"
+
 
 class Board:
     """Class to represent a chess board.
@@ -113,6 +115,9 @@ class Board:
         return self.squares[col_name]
 
     def __str__(self) -> str:
+        return self.squares.__str__()
+    
+    def __repr__(self) -> str:
         return self.squares.__str__()
 
     def set_up_game_board(self):
