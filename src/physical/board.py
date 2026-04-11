@@ -43,14 +43,14 @@ class PieceType(Enum):
 
     PAWN = 1
     KNIGHT = 3
-    BISHOP = 3.2 because I personally like bishops more than knights
+    BISHOP = 4 because I personally like bishops more than knights
     ROOK = 5
     QUEEN = 9
     KING = 39 because all other  together are 39 and the king is worth the game.
     """
     PAWN = 1
     KNIGHT = 3
-    BISHOP = 3.2
+    BISHOP = 4
     ROOK = 5
     QUEEN = 9
     KING = 39

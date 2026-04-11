@@ -34,7 +34,7 @@ class Move:
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
     """
 
-    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0):
+    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value=0):
         self.from_col = from_col
         self.from_row = from_row
         self.to_col = to_col
@@ -42,8 +42,8 @@ class Move:
         self.value = value
 
     def perform_on(self, game: board.Board):
-        from_square = self[move.from_col][move.from_row]
-        to_square = self[move.to_col][move.to_row]
+        from_square = game[self.from_col][self.from_row]
+        to_square = game[self.to_col][self.to_row]
 
         if from_square.piece == None:
             raise MoveException("This move is illegal because it is from a square without a piece.")
