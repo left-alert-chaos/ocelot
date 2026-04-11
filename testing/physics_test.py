@@ -13,5 +13,5 @@ pprint(physical.movement.potential_moves(game["a"][0].piece, game))
 #add a rogue rook
 game["e"][3].piece = physical.board.Piece(physical.board.PieceType.ROOK, physical.board.PieceColor.WHITE, game["e"][3])
 pprint(physical.movement.potential_moves(game["e"][3].piece, game))
-pprint(game)
 pprint(game["e"][3].piece)
+

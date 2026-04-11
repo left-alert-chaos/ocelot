@@ -34,11 +34,12 @@ class Move:
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
     """
 
-    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int):
+    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0):
         self.from_col = from_col
         self.from_row = from_row
         self.to_col = to_col
         self.to_row = to_row
+        self.value = value
 
     def perform_on(self, game: board.Board):
         from_square = self[move.from_col][move.from_row]
@@ -57,10 +58,10 @@ class Move:
         return False
 
     def __str__(self) -> str:
-        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation)"
+        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation); value: {self.value}"
 
     def __repr__(self) -> str:
-        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation)"
+        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation); value: {self.value}"
 
 
 class MoveException(Exception):
@@ -114,10 +115,10 @@ def rook_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     col_num = letters.index(col)
     
     #move right
-    peek_col_num = copy.copy(col_num + 1)
+    peek_col_num = col_num + 1
     while peek_col_num < 8:
         peek_piece = game[letters[peek_col_num]][row].piece
-        temp_move = Move(col, row, letters[peek_col_num], row)
+        temp_move = Move(col, row, letters[peek_col_num], row, peek_piece.ptype.value if peek_piece != None else 0)
         if peek_piece == None:
             moves.append(temp_move)
         elif peek_piece.color != piece.color:
@@ -127,4 +128,47 @@ def rook_moves(piece: board.Piece, game: board.Board) -> list[Move]:
             break
         peek_col_num += 1
 
+    #move left
+    peek_col_num = col_num - 1
+    while peek_col_num > -1:
+        peek_piece = game[letters[peek_col_num]][row].piece
+        temp_move = Move(col, row, letters[peek_col_num], row, peek_piece.ptype.value if peek_piece != None else 0)
+        if peek_piece == None:
+            moves.append(temp_move)
+        elif peek_piece.color != piece.color:
+            moves.append(temp_move)
+            break
+        else:
+            break
+        peek_col_num -= 1
+    
+    #move down
+    peek_row = row - 1
+    while peek_row > -1:
+        peek_piece = game[col][peek_row].piece
+        temp_move = Move(col, row, col, peek_row, peek_piece.ptype.value if peek_piece != None else 0)
+        if peek_piece == None:
+            moves.append(temp_move)
+        elif peek_piece.color != piece.color:
+            moves.append(temp_move)
+            break
+        else:
+            break
+        peek_row -= 1
+
+    #move up
+    peek_row = row + 1
+    while peek_row < 8:
+        peek_piece = game[col][peek_row].piece
+        temp_move = Move(col, row, col, peek_row, peek_piece.ptype.value if peek_piece != None else 0)
+        if peek_piece == None:
+            moves.append(temp_move)
+        elif peek_piece.color != piece.color:
+            moves.append(temp_move)
+            break
+        else:
+            break
+        peek_row += 1
+
     return moves
+
