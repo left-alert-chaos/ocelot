@@ -94,12 +94,31 @@ class Board:
     If default_pos is True, a stock starting position is automatically set up.
 
     ## __getitem__(self, col_name: str) -> list[Square]
-    Takes a column name and returns a list of squares."""
+    Takes a column name and returns a list of squares.
+
+    ## white_pieces(self) -> list[Piece]
+    Iterates through pieces and returns white pieces in no particular order.
+
+    ## black_pieces(self) -> list[Piece]
+    Iterates through pieces and returns white pieces in no particular order.
+
+    ## set_up_game_board(self)
+    Puts pieces in default positions for a standard game.
+
+    ## prep_column(self, col_name: str, ptype: PieceType)
+    Adds pawns and given piece in correct places to given column.
+
+    ## add_pawns(self, col: list[Square])
+    Adds pawns to second and second-to-last squares in column.
+    """
 
     def __init__(self, default_pos: bool=True):
         # Set up 8 * 8 board with dict to represent lettered columns
         self.squares: dict[str, list[Square]] = {}
         self.pieces = []
+        self.threatened_squares = []
+        self.squares_white_threatens = []
+        self.squares_black_threatens = []
         for col in "abcdefgh":
             col_list = []
             for row in range(8):
@@ -110,7 +129,7 @@ class Board:
             self.set_up_game_board()
 
     def __getitem__(self, col_name: str) -> list[Square]:
-        if not isinstance(col_name, str) or len(col_name) != 1:
+        if not isinstance(col_name, str) or len(col_name) != 1 or col_name.isdecimal():
             raise TypeError("col_name is not a single-letter string.")
         return self.squares[col_name]
 
@@ -120,13 +139,19 @@ class Board:
     def __repr__(self) -> str:
         return self.squares.__str__()
 
+    def black_pieces(self) -> list[Piece]:
+        return [piece for piece in self.pieces if piece.color == PieceColor.BLACK]
+    
+    def white_pieces(self) -> list[Piece]:
+        return [piece for piece in self.pieces if piece.color == PieceColor.WHITE]
+
     def set_up_game_board(self):
         self.prep_column("a", PieceType.ROOK)
         self.prep_column("h", PieceType.ROOK)
         self.prep_column("b", PieceType.KNIGHT)
         self.prep_column("g", PieceType.KNIGHT)
         self.prep_column("c", PieceType.BISHOP)
-        self.prep_column("c", PieceType.BISHOP)
+        self.prep_column("f", PieceType.BISHOP)
         self.prep_column("d", PieceType.QUEEN)
         self.prep_column("e", PieceType.KING)
 
