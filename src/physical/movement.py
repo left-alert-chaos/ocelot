@@ -90,8 +90,37 @@ class Castle(Action):
             raise MoveException(f"{king} has already moved, so castling is illegal.")
         if len(rooks) == 0:
             raise MoveException(f"No {self.color.name} rooks could be found that haven't already moved, so castling is illegal.")
+        
+        backrank = king.location.row
 
-        print(f"{self} BUT THIS IS NOT IMPLEMENTED YET.")
+        if self.side == CastleSide.QUEEN:
+            # move king to new pos
+            king.location.piece = None
+            game["c"][backrank].piece = king
+            king.location = game["c"][backrank]
+
+            # move rook to new pos
+            rook = game["a"][backrank].piece
+            if rook == None:
+                raise MoveException(f"Somewhere, somehow, the rook on ({game['a'][backrank]}) became None.")
+            rook.location.piece = None
+            game["d"][backrank].piece = rook
+            rook.location = game["d"][backrank]
+        else:
+            # move king to new pos
+            king.location.piece = None
+            game["g"][backrank].piece = king
+            king.location = game["g"][backrank]
+
+            # move rook to new pos
+            rook = game["h"][backrank].piece
+            if rook == None:
+                raise MoveException(f"Somewhere, somehow, the rook on ({game['a'][backrank]}) became None.")
+            rook.location.piece = None
+            game["f"][backrank].piece = rook
+            rook.location = game["f"][backrank]
+
+            
 
     def __str__(self) -> str:
         return f"{self.color.name} castles {self.side.name}side."
@@ -134,6 +163,7 @@ class Move(Action):
 
         to_square.piece = copy.deepcopy(from_square.piece)
         to_square.piece.has_moved = True
+        to_square.piece.location = to_square
         from_square.piece = None
 
     def is_illegal(self, game: board.Board) -> bool:
