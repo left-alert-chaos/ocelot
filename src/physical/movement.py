@@ -58,10 +58,10 @@ class Move:
         return False
 
     def __str__(self) -> str:
-        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation); value: {self.value}"
+        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
 
     def __repr__(self) -> str:
-        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (add one to row nums to get standard notation); value: {self.value}"
+        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
 
 
 class MoveException(Exception):
