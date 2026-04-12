@@ -25,12 +25,12 @@ Finds potential moves for pieces. Does not find only legal moves; doesn't skip p
 ## <piece>_moves(piece: board.Piece, game: board.Board) -> list[Move]
 Dependency of potential_moves(). Same shtick, but only for the given piece.
 
-## king_square_value(square: board.Square, king_color: board.PieceColor) -> None | int
+## check_square_value(square: board.Square, king_color: board.PieceColor) -> None | int
 Checks if a square has a collision, or is capturable. If None is returned, the square cannot be moved to.
 If an integer is returned, it is the value of capturing on that square.
 
-## king_square(square: board.Square, king_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]])
-Runs king_square_value and checks for None. If an integer is returned, the square is appended to allowed_squares."""
+## check_square(square: board.Square, king_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]])
+Runs check_square_value and checks for None. If an integer is returned, the square is appended to allowed_squares."""
 
 import board
 import copy
@@ -185,7 +185,7 @@ class MoveException(Exception):
         super().__init__(message)
 
 
-def potential_moves(piece: board.Piece | None, game: board.Board) -> list[Move]:
+def potential_moves(piece: board.Piece | None, game: board.Board) -> list[Castle | Move] | list[Move]:
     # make LSP happy
     if piece == None:
         return []
@@ -197,6 +197,8 @@ def potential_moves(piece: board.Piece | None, game: board.Board) -> list[Move]:
             return rook_moves(piece, game)
         case board.PieceType.KING:
             return king_moves(piece, game)
+        case board.PieceType.KNIGHT:
+            return knight_moves(piece, game)
         case _:
             return []
 
@@ -294,21 +296,47 @@ def rook_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 def knight_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     squares = []
     col = piece.location.col
-    LETTERS = "abcdefgh"
     col_num = LETTERS.index(col)
     row = piece.location.row
 
+    #local function to make things simpler
+    def local_square(local_col_num: int, local_row_num: int):
+        check_square(game[LETTERS[local_col_num]][local_row_num], piece.color, squares)
+
     #right 1 down 2
     if col_num < 7 and row > 1:
-        squares.append(game[LETTERS[col_num + 1]][row - 2])
+        local_square(col_num + 1, row - 2)
 
     #left 1 down 2
     if col_num > 0 and row > 1:
-        squares.append(game[LETTERS[col_num - 1]][row - 2])
+        local_square(col_num - 1, row - 2)
 
     #left 2 down 1
     if col_num > 1 and row > 0:
-        squares.append(game[LETTERS[col_num - 2]][row - 1])
+        local_square(col_num - 2, row - 1)
+
+    #left 2 up 1
+    if col_num > 1 and row < 7:
+        local_square(col_num - 2, row + 1)
+
+    #left 1 up 2
+    if col_num > 0 and row < 6:
+        local_square(col_num - 1, row + 2)
+
+    #right 1 up 2
+    if col_num < 7 and row < 6:
+        local_square(col_num + 1, row + 2)
+
+    #right 2 up 1
+    if col_num < 6 and row < 7:
+        local_square(col_num + 2, row + 1)
+
+    #right 2 down 1
+    if col_num < 6 and row > 0:
+        local_square(col_num + 2, row - 1)
+
+    #more insane spaghetti
+    return [Move(col, row, square.col, square.row, value) for (square, value) in squares]
 
 
 # Find possible but not necessarily legal king moves
@@ -320,7 +348,7 @@ def king_moves(piece: board.Piece, game: board.Board) -> list[Castle | Move] | l
 
     # Local function to make things simpler
     def local_square(local_col_num: int, local_row_num: int):
-        king_square(game[LETTERS[local_col_num]][local_row_num], piece.color, squares)
+        check_square(game[LETTERS[local_col_num]][local_row_num], piece.color, squares)
 
     # left
     if col_num > 0:
@@ -356,13 +384,13 @@ def king_moves(piece: board.Piece, game: board.Board) -> list[Castle | Move] | l
 
     # insane spaghetti one-liner
     # Castling is returned regardless of legality
-    moves = [Move(piece.location.col, piece.location.row, square.col, square.row, value) for (square, value) in squares]
+    moves = [Move(col, row, square.col, square.row, value) for (square, value) in squares]
     if not piece.has_moved:
         moves += [Castle(CastleSide.QUEEN, piece.color), Castle(CastleSide.KING, piece.color)]
     return moves
 
 
-def king_square_value(square: board.Square, king_color: board.PieceColor) -> None | int:
+def check_square_value(square: board.Square, king_color: board.PieceColor) -> None | int:
     piece = square.piece
     if piece == None:
         return 0
@@ -372,8 +400,8 @@ def king_square_value(square: board.Square, king_color: board.PieceColor) -> Non
         return
 
 
-def king_square(square: board.Square, king_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]]):
-    value = king_square_value(square, king_color)
+def check_square(square: board.Square, king_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]]):
+    value = check_square_value(square, king_color)
     if value != None:
         allowed_squares.append((square, value))
 
@@ -382,3 +410,4 @@ LETTERS = "abcdefgh"
 
 if __name__ == "__main__":
     print("src/movement.py: This file is a dependency of other modules in Sophisticate. Running it by itself simply prints this message. To test this file, write a test file in the /testing directory.")
+
