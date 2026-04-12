@@ -155,8 +155,8 @@ class Move(Action):
         self.value = value
 
     def perform_on(self, game: board.Board):
-        from_square = self[move.from_col][move.from_row]
-        to_square = self[move.to_col][move.to_row]
+        from_square = game[self.from_col][self.from_row]
+        to_square = game[self.to_col][self.to_row]
 
         if from_square.piece == None:
             raise MoveException("This move is illegal because it is from a square without a piece.")
@@ -291,6 +291,26 @@ def rook_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     return moves
 
 
+def knight_moves(piece: board.Piece, game: board.Board) -> list[Move]:
+    squares = []
+    col = piece.location.col
+    LETTERS = "abcdefgh"
+    col_num = LETTERS.index(col)
+    row = piece.location.row
+
+    #right 1 down 2
+    if col_num < 7 and row > 1:
+        squares.append(game[LETTERS[col_num + 1]][row - 2])
+
+    #left 1 down 2
+    if col_num > 0 and row > 1:
+        squares.append(game[LETTERS[col_num - 1]][row - 2])
+
+    #left 2 down 1
+    if col_num > 1 and row > 0:
+        squares.append(game[LETTERS[col_num - 2]][row - 1])
+
+
 # Find possible but not necessarily legal king moves
 def king_moves(piece: board.Piece, game: board.Board) -> list[Castle | Move] | list[Move]:
     row = piece.location.row
@@ -362,4 +382,3 @@ LETTERS = "abcdefgh"
 
 if __name__ == "__main__":
     print("src/movement.py: This file is a dependency of other modules in Sophisticate. Running it by itself simply prints this message. To test this file, write a test file in the /testing directory.")
-
