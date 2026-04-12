@@ -2,7 +2,6 @@
 All row values are 0-indexed,
 so no matter what part of the engine you're in (unless it's user-facing),
 row 7 is the equivalent of real-life row 8."""
-from pprint import pprint
 from enum import Enum
 
 
