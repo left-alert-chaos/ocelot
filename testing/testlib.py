@@ -108,8 +108,9 @@ def run_all(directory: str="."):
 
         # add nested files
         if os.path.isdir(test):
+            sys.path.append(test)
             for nested in os.listdir(test):
-                queue.append(f"{test}.{nested}".replace("py", ""))
+                queue.append(nested)
             continue
 
         print(f"\n\nRunning test file '{test}'.")
@@ -129,12 +130,7 @@ def run_all(directory: str="."):
 #returns true if all pass
 def run_file(fname: str) -> bool:
     try:
-        file = __import__(fname.replace("py", ""))
-        print("IMPORTED FILE 1/3")
-        lib = file.testlib
-        print("ACCESSED TESTLIB 2/3")
-        tests = lib.tests
-        print("ACCESSED TESTS 3/3")
+        tests = __import__(fname.replace("py", "")).testlib.tests
     except Exception as e:
         print(f"Couldn't find testlib module in test file '{fname}'. Skipping.")
         print(f"Error: {e}")
