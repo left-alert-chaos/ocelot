@@ -172,3 +172,23 @@ def rook_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 
     return moves
 
+
+def knight_moves(piece: board.Piece, game: board.Board) -> list[Move]:
+    squares = []
+    col = piece.location.col
+    LETTERS = "abcdefgh"
+    col_num = LETTERS.index(col)
+    row = piece.location.row
+
+    #right 1 down 2
+    if col_num < 7 and row > 1:
+        squares.append(game[LETTERS[col_num + 1]][row - 2])
+
+    #left 1 down 2
+    if col_num > 0 and row > 1:
+        squares.append(game[LETTERS[col_num - 1]][row - 2])
+
+    #left 2 down 1
+    if col_num > 1 and row > 0:
+        squares.append(game[LETTERS[col_num - 2]][row - 1])
+
