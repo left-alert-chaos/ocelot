@@ -101,6 +101,7 @@ class Castle(Action):
 
             # move rook to new pos
             rook = game["a"][backrank].piece
+            #make the language server happy
             if rook == None:
                 raise MoveException(f"Somewhere, somehow, the rook on ({game['a'][backrank]}) became None.")
             rook.location.piece = None
@@ -114,8 +115,9 @@ class Castle(Action):
 
             # move rook to new pos
             rook = game["h"][backrank].piece
+            #make the language server happy
             if rook == None:
-                raise MoveException(f"Somewhere, somehow, the rook on ({game['a'][backrank]}) became None.")
+                raise MoveException(f"Somewhere, somehow, the rook on ({game['h'][backrank]}) became None.")
             rook.location.piece = None
             game["f"][backrank].piece = rook
             rook.location = game["f"][backrank]
