@@ -113,7 +113,6 @@ def run_all(directory: str="."):
                 queue.append(nested)
             continue
 
-        print(f"\n\nRunning test file '{test}'.")
         if run_file(test):
             print(f"All tests in file '{test}' passed.")
         else:
@@ -130,7 +129,7 @@ def run_all(directory: str="."):
 #returns true if all pass
 def run_file(fname: str) -> bool:
     try:
-        tests = __import__(fname.replace("py", "")).testlib.tests
+        tests = __import__(fname.replace(".py", "")).testlib.tests
     except Exception as e:
         print(f"Couldn't find testlib module in test file '{fname}'. Skipping.")
         print(f"Error: {e}")

@@ -1,4 +1,3 @@
-import testlib
 from src.physical import board, movement
 
 game = board.Board()
