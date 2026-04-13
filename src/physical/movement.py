@@ -1,4 +1,4 @@
-"""Module that holds anything for moves.
+"""Module that holds anything for moves and attacks (check, etc).
 
 # Classes
 
@@ -42,6 +42,9 @@ It isn't a method because of namespacing issues.
 
 ## update_<color>_threats(game: board.Board)
 Updates threats for only the given color.
+
+## is_check(color: board.PieceColor, game: board.Board) -> bool
+Checks if king is threatened and returns True if it is.
 """
 
 import board
@@ -186,7 +189,17 @@ class Move(Action):
             update_black_threats(game)
 
     def is_illegal(self, game: board.Board) -> bool:
-        return False
+        from_square = game[self.from_col][self.from_row]
+        local_board = copy.deepcopy(game)
+        self.perform_on(local_board)
+
+        if from_square.piece == None:
+            print(f"{self} is illegal because it is from a square without a piece.")
+            return True
+
+        color = from_square.piece.color
+        return is_check(color, local_board)
+
 
     def __str__(self) -> str:
         return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
@@ -496,7 +509,27 @@ def update_black_threats(game: board.Board):
     #remove duplicates with list(set)
     game.squares_black_threatens = list({game[move.to_col][move.to_row] for move in black_moves})
 
+
+def is_check(color: board.PieceColor, game: board.Board) -> bool:
+    pieces = game.white_pieces() if color == board.PieceColor.WHITE else game.black_pieces()
+    enemy_threats = game.squares_black_threatens if color == board.PieceColor.WHITE else game.squares_white_threatens
+    king = None
+    for piece in pieces:
+        if piece.ptype == board.PieceType.KING:
+            king = piece
+            break
+    
+    #error
+    if king == None:
+        raise PieceException(f"No {color.name} kings could be found, so check cannot be determined.")
+
+    return king.location in enemy_threats
+
         
+class PieceException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
 
 LETTERS = "abcdefgh"
 

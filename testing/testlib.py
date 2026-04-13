@@ -57,10 +57,9 @@ def test_function(func: types.FunctionType, expected_result, name: str="") -> bo
     
     if fail:
         print(f"Function test '{name}' failed due to {fail_reason}. Err: {err}")
+        fails += 1
     else:
         print(f"Function test '{name}' succeeded!")
-    if fail:
-        fails += 1
     return not fail
 
 
@@ -83,6 +82,7 @@ def register_bool_assertion(assertion: bool, name: str=""):
 
 
 def run_all(directory: str="."):
+    global fails
     # Move to testing suite directory
     if not os.getcwd().endswith("testing"):
         os.chdir("testing")
