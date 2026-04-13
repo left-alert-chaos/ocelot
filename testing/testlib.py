@@ -37,6 +37,7 @@ import types
 tests: list[types.FunctionType] = []
 SKIP = ("testlib.py", "__pycache__", "all.sh", "__cache__")
 fails = 0
+num_of_tests = 0
 
 
 def test_function(func: types.FunctionType, expected_result, name: str="") -> bool:
@@ -119,8 +120,11 @@ def run_all(directory: str="."):
             print(f"Not all tests in file '{test}' passed.")
             fail = True
 
+    print(f"\n\nAll tests complete ({num_of_tests}).")
     if not fail:
-        print("\n\nAll tests in all files passed!")
+        print("All tests in all files passed!")
+    else:
+        print(f"{fails} fails.")
 
     #exit with number of failed tests
     sys.exit(fails)
@@ -128,6 +132,8 @@ def run_all(directory: str="."):
 
 #returns true if all pass
 def run_file(fname: str) -> bool:
+    global num_of_tests
+
     try:
         tests = __import__(fname.replace(".py", "")).testlib.tests
     except Exception as e:
@@ -137,6 +143,7 @@ def run_file(fname: str) -> bool:
     fail = False
 
     for test in tests:
+        num_of_tests += 1
         if not test():
             fail = True
     return not fail

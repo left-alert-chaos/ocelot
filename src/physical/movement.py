@@ -25,12 +25,17 @@ Finds potential moves for pieces. Does not find only legal moves; doesn't skip p
 ## <piece>_moves(piece: board.Piece, game: board.Board) -> list[Move]
 Dependency of potential_moves(). Same shtick, but only for the given piece.
 
-## check_square_value(square: board.Square, king_color: board.PieceColor) -> None | int
+## check_square_value(square: board.Square, player_color: board.PieceColor) -> None | int
 Checks if a square has a collision, or is capturable. If None is returned, the square cannot be moved to.
 If an integer is returned, it is the value of capturing on that square.
 
-## check_square(square: board.Square, king_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]])
-Runs check_square_value and checks for None. If an integer is returned, the square is appended to allowed_squares."""
+## check_square(square: board.Square, player_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]])
+Runs check_square_value and checks for None. If an integer is returned, the square is appended to allowed_squares.
+
+## def project_diagonal(col_change: int, row_change: int, start: board.Square, game: board.Board, color: board.PieceColor, buffer: list[tuple[board.Square, int]])
+Iterates until a collision is encountered and puts possible squares in buffer. The col_change and row_change variables are not bound,
+so it is technically possible to use this function to find illegal moves.
+"""
 
 import board
 import copy
@@ -168,6 +173,7 @@ class Move(Action):
         to_square.piece.location = to_square
         from_square.piece = None
 
+    #this will work someday
     def is_illegal(self, game: board.Board) -> bool:
         return False
 
@@ -199,8 +205,10 @@ def potential_moves(piece: board.Piece | None, game: board.Board) -> list[Castle
             return king_moves(piece, game)
         case board.PieceType.KNIGHT:
             return knight_moves(piece, game)
-        case _:
-            return []
+        case board.PieceType.BISHOP:
+            return bishop_moves(piece, game)
+        case board.PieceType.QUEEN:
+            return rook_moves(piece, game) + bishop_moves(piece, game)
 
 
 def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
@@ -390,24 +398,70 @@ def king_moves(piece: board.Piece, game: board.Board) -> list[Castle | Move] | l
     return moves
 
 
-def check_square_value(square: board.Square, king_color: board.PieceColor) -> None | int:
+def check_square_value(square: board.Square, player_color: board.PieceColor) -> None | int:
     piece = square.piece
     if piece == None:
         return 0
-    if piece.color != king_color:
+    if piece.color != player_color:
         return piece.ptype.value
     else:
         return
 
 
-def check_square(square: board.Square, king_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]]):
-    value = check_square_value(square, king_color)
+def check_square(square: board.Square, player_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]]):
+    value = check_square_value(square, player_color)
     if value != None:
         allowed_squares.append((square, value))
 
 
+def bishop_moves(piece: board.Piece, game: board.Board) -> list[Move]:
+    squares = []
+
+    #wrap project_diagonal() to be simpler
+    def local_diagonal(col_change: int, row_change: int):
+        project_diagonal(col_change, row_change, piece.location, game, piece.color, squares)
+
+    #up and left
+    local_diagonal(-1, 1)
+
+    #up and right
+    local_diagonal(1, 1)
+
+    #down and right
+    local_diagonal(1, -1)
+
+    #down and left
+    local_diagonal(-1, -1)
+
+    row = piece.location.row
+    col = piece.location.col
+    return [Move(col, row, square.col, square.row, value) for (square, value) in squares]
+
+
+def project_diagonal(col_change: int, row_change: int, start: board.Square, game: board.Board, color: board.PieceColor, buffer: list[tuple[board.Square, int]]):
+    col_num = LETTERS.index(start.col)
+    row = copy.copy(start.row)
+
+    #move once
+    col_num += col_change
+    row += row_change
+    
+    #iterate until a collision or end of board
+    while col_num >= 0 and row >= 0 and col_num < 8 and row < 8:
+        peek_square = game[LETTERS[col_num]][row]
+        peek_value = check_square_value(peek_square, color)
+        if peek_value == None:
+            break
+        
+        buffer.append((peek_square, peek_value))
+
+        #move
+        col_num += col_change
+        row += row_change
+        
+
 LETTERS = "abcdefgh"
 
 if __name__ == "__main__":
-    print("src/movement.py: This file is a dependency of other modules in Sophisticate. Running it by itself simply prints this message. To test this file, write a test file in the /testing directory.")
+    print("src/movement.py: This file is a dependency of other modules in Sophisticate. Running it by itself simply prints this message. To test this file, write a test file in the /testing directory. Docstrings should be ample documentation.")
 
