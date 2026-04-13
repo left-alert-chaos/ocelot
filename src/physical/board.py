@@ -1,7 +1,30 @@
 """Module holding Board and Move classes.
 All row values are 0-indexed,
 so no matter what part of the engine you're in (unless it's user-facing),
-row 7 is the equivalent of real-life row 8."""
+row 7 is the equivalent of real-life row 8.
+
+# Functions
+
+## col_row(square: Square) -> tuple[str, int]
+Returns the info of a square.
+
+# Classes
+
+## Square
+Represents a square on the board.
+
+## PieceColor
+Enum for color of a player's pieces. Also used in other parts of the engine to distinguish players.
+
+## PieceType
+Enum for type of pieces, including value.
+
+## Piece
+A piece on the board, holding color, type, and location.
+
+## Board
+The board itself. Holds columns, rows, and sets up starting position by default.
+"""
 from enum import Enum
 
 
@@ -86,6 +109,17 @@ class Piece:
 class Board:
     """Class to represent a chess board.
     Automatically populates with 8 lettered columns of 8 squares.
+
+    # Attributes
+
+    ## threatened_squares: list[Square]
+    All squares on the board that can be moved to by any player.
+
+    ## squares_white_threatens: list[Square]
+    All squares on the board that can be moved to by white.
+
+    ## squares_black_threatens: list[Square]
+    All squares on the board that can be moved to by black.
     
     # Methods
 

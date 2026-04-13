@@ -32,9 +32,16 @@ If an integer is returned, it is the value of capturing on that square.
 ## check_square(square: board.Square, player_color: board.PieceColor, allowed_squares: list[tuple[board.Square, int]])
 Runs check_square_value and checks for None. If an integer is returned, the square is appended to allowed_squares.
 
-## def project_diagonal(col_change: int, row_change: int, start: board.Square, game: board.Board, color: board.PieceColor, buffer: list[tuple[board.Square, int]])
+## project_diagonal(col_change: int, row_change: int, start: board.Square, game: board.Board, color: board.PieceColor, buffer: list[tuple[board.Square, int]])
 Iterates until a collision is encountered and puts possible squares in buffer. The col_change and row_change variables are not bound,
 so it is technically possible to use this function to find illegal moves.
+
+## update_threats(game: board.Board)
+This reads a Board object and populates its threatened_squares and squares_white_threatens and squares_black_threatens attributes.
+It isn't a method because of namespacing issues.
+
+## update_<color>_threats(game: board.Board)
+Updates threats for only the given color.
 """
 
 import board
@@ -127,7 +134,6 @@ class Castle(Action):
             game["f"][backrank].piece = rook
             rook.location = game["f"][backrank]
 
-            
 
     def __str__(self) -> str:
         return f"{self.color.name} castles {self.side.name}side."
@@ -164,16 +170,21 @@ class Move(Action):
         to_square = game[self.to_col][self.to_row]
 
         if from_square.piece == None:
-            raise MoveException("This move is illegal because it is from a square without a piece.")
-        
-        #maybe check if it's a capture?
+            raise MoveException(f"This move ({self}) is illegal because it is from a square without a piece.")
 
+        move_color = from_square.piece.color
+        
         to_square.piece = copy.deepcopy(from_square.piece)
         to_square.piece.has_moved = True
         to_square.piece.location = to_square
         from_square.piece = None
 
-    #this will work someday
+        #update board because I'll forget to do it later
+        if move_color == board.PieceColor.WHITE:
+            update_white_threats(game)
+        else:
+            update_black_threats(game)
+
     def is_illegal(self, game: board.Board) -> bool:
         return False
 
@@ -458,6 +469,33 @@ def project_diagonal(col_change: int, row_change: int, start: board.Square, game
         #move
         col_num += col_change
         row += row_change
+
+
+def update_threats(game: board.Board):
+    update_white_threats(game)
+    update_black_threats(game)
+
+    #tie together
+    game.threatened_squares = game.squares_white_threatens + game.squares_black_threatens
+
+
+def update_white_threats(game: board.Board):
+    #same for white
+    white_moves = []
+    for piece in game.white_pieces():
+        white_moves += potential_moves(piece, game)
+    #remove dupes
+    game.squares_white_threatens = list({game[move.to_col][move.to_row] for move in white_moves})
+
+
+def update_black_threats(game: board.Board):
+    #get potential moves and extract to_col and to_row attributes
+    black_moves = []
+    for piece in game.black_pieces():
+        black_moves += potential_moves(piece, game)
+    #remove duplicates with list(set)
+    game.squares_black_threatens = list({game[move.to_col][move.to_row] for move in black_moves})
+
         
 
 LETTERS = "abcdefgh"
