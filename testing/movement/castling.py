@@ -29,3 +29,9 @@ testlib.register_bool_assertion(king != None and king.ptype == board.PieceType.K
 rook = game4["d"][7].piece
 testlib.register_bool_assertion(rook != None and rook.ptype == board.PieceType.ROOK and rook.color == board.PieceColor.BLACK, "Black rook in right place (queenside)")
 
+game5 = board.Board()
+testlib.register_function_test(lambda: movement.Castle(movement.CastleSide.KING, board.PieceColor.WHITE).is_illegal(game5), True, "White can't castle kingside in default pos")
+
+game6 = board.Board()
+testlib.register_function_test(lambda: movement.Castle(movement.CastleSide.KING, board.PieceColor.BLACK).is_illegal(game5), True, "Black can't castle kingside in default pos")
+

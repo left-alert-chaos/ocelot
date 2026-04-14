@@ -138,6 +138,32 @@ class Castle(Action):
             rook.location = game["f"][backrank]
 
 
+    def is_illegal(self, game: board.Board) -> bool:
+        if is_check(self.color, game):
+            print("Castle is illegal because check")
+            return True
+        rook_col = "h" if self.side == CastleSide.KING else "a"
+        backrank = 0 if self.color == board.PieceColor.WHITE else 7
+        rook = game[rook_col][backrank].piece
+
+        #check rook legality
+        if rook == None or rook.has_moved or rook.color != self.color:
+            print("castle is illegal because rook is invalid")
+            return True
+
+        #king legality
+        king = game["e"][backrank].piece
+        if king == None or king.has_moved:
+            print("castle is illegal because king is invalid")
+            return True
+
+        #check clear backrank
+        if self.side == CastleSide.KING:
+            return not (game["f"][backrank].piece == None and game["g"][backrank].piece == None)
+        else:
+            return not (game["b"][backrank].piece == None and game["c"][backrank].piece == None and game["d"][backrank].piece == None)
+
+
     def __str__(self) -> str:
         return f"{self.color.name} castles {self.side.name}side."
 
@@ -174,19 +200,18 @@ class Move(Action):
 
         if from_square.piece == None:
             raise MoveException(f"This move ({self}) is illegal because it is from a square without a piece.")
+        if to_square.piece != None:
+            game.pieces.remove(to_square.piece)
 
-        move_color = from_square.piece.color
-        
         to_square.piece = copy.deepcopy(from_square.piece)
+        game.pieces.append(to_square.piece)
         to_square.piece.has_moved = True
         to_square.piece.location = to_square
+        game.pieces.remove(from_square.piece)
         from_square.piece = None
 
         #update board because I'll forget to do it later
-        if move_color == board.PieceColor.WHITE:
-            update_white_threats(game)
-        else:
-            update_black_threats(game)
+        update_threats(game)
 
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
@@ -250,10 +275,10 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     #diagonals
     col_num = LETTERS.index(loc.col)
     #left diagonal
-    if col_num > 0 and game[LETTERS[col_num - 1]][loc.row + direction].piece != None:
+    if col_num > 0 and game[LETTERS[col_num - 1]][loc.row + direction].piece != None and game[LETTERS[col_num - 1]][loc.row + direction].piece.color != piece.color:
         moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction))
     #right diagonal
-    if col_num < 7 and game[LETTERS[col_num + 1]][loc.row + direction].piece != None:
+    if col_num < 7 and game[LETTERS[col_num + 1]][loc.row + direction].piece != None and game[LETTERS[col_num + 1]][loc.row + direction].piece.color != piece.color:
         moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction))
 
     return moves

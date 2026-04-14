@@ -15,4 +15,3 @@ testlib.register_function_test(lambda: movement.is_check(board.PieceColor.BLACK,
 
 default_game = board.Board()
 testlib.register_function_test(lambda: movement.is_check(board.PieceColor.BLACK, default_game), False, "Default position isn't check")
-
