@@ -498,7 +498,7 @@ def update_white_threats(game: board.Board):
     for piece in game.white_pieces():
         white_moves += potential_moves(piece, game)
     #remove dupes
-    game.squares_white_threatens = list({game[move.to_col][move.to_row] for move in white_moves})
+    game.squares_white_threatens = list({game[move.to_col][move.to_row] for move in white_moves if not isinstance(move, Castle)})
 
 
 def update_black_threats(game: board.Board):
@@ -507,7 +507,7 @@ def update_black_threats(game: board.Board):
     for piece in game.black_pieces():
         black_moves += potential_moves(piece, game)
     #remove duplicates with list(set)
-    game.squares_black_threatens = list({game[move.to_col][move.to_row] for move in black_moves})
+    game.squares_black_threatens = list({game[move.to_col][move.to_row] for move in black_moves if not isinstance(move, Castle)})
 
 
 def is_check(color: board.PieceColor, game: board.Board) -> bool:
