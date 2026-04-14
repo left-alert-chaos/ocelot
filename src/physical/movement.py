@@ -266,11 +266,16 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     loc = piece.location
     
     #one square push
-    moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction))
+    if loc.row < 7 and game[loc.col][loc.row + 1].piece == None:
+        moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction))
 
     #two square push
     if not piece.has_moved:
-        moves.append(Move(loc.col, loc.row, loc.col, loc.row + (direction * 2)))
+        #check for collisions on the way
+        middle_piece = game[loc.col][loc.row + direction].piece
+        last_piece = game[loc.col][loc.row + (direction * 2)].piece
+        if middle_piece == None and last_piece == None:
+            moves.append(Move(loc.col, loc.row, loc.col, loc.row + (direction * 2)))
 
     #diagonals
     col_num = LETTERS.index(loc.col)

@@ -1,6 +1,7 @@
 """Randomly chooses legal moves. More a low-effort, unstable tech demo than anything else. Castling isn't supported."""
 from physical import board, movement
 import random
+from pprint import pprint
 
 game = board.Board()
 
@@ -18,14 +19,19 @@ def make_move():
 def user_moves():
     global game
     col1 = input("Column you're moving from: ")
-    row1 = int(input("Row you're moving from (0-indexed): "))
+    row1 = int(input("Row you're moving from: ")) - 1
     col2 = input("Column you're moving to: ")
-    row2 = int(input("Row you're moving to (0-indexed): "))
+    row2 = int(input("Row you're moving to: ")) - 1
     move = movement.Move(col1, row1, col2, row2)
     move.perform_on(game)
     movement.update_threats(game)
 
+move_num = 0
 while True:
-    make_move()
-    user_moves()
-
+    move_num += 1
+    try:
+        make_move()
+        user_moves()
+    except:
+        print(f"End of game. That lasted {move_num} moves!")
+        break
