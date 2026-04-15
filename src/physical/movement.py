@@ -136,6 +136,7 @@ class Castle(Action):
             rook.location.piece = None
             game["f"][backrank].piece = rook
             rook.location = game["f"][backrank]
+        update_threats(game)
 
 
     def is_illegal(self, game: board.Board) -> bool:

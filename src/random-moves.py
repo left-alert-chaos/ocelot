@@ -18,13 +18,19 @@ def make_move():
 
 def user_moves():
     global game
-    col1 = input("Column you're moving from: ")
-    row1 = int(input("Row you're moving from: ")) - 1
-    col2 = input("Column you're moving to: ")
-    row2 = int(input("Row you're moving to: ")) - 1
-    move = movement.Move(col1, row1, col2, row2)
+    move = input("Please enter a castle side (queen or king) or a move stylized as a1 a2:")
+    
+    move = parse_move(move)
     move.perform_on(game)
     movement.update_threats(game)
+
+def parse_move(move: str) -> movement.Move | movement.Castle:
+    words = move.split()
+    if len(words) == 2:
+        return movement.Move(words[0][0], int(words[0][1]), words[1][0], int(words[1][1]))
+    else:
+        side = movement.CastleSide.QUEEN if words[0].lower() == "queen" else movement.CastleSide.KING
+        return movement.Castle(side, board.PieceColor.BLACK)
 
 move_num = 0
 while True:
@@ -33,5 +39,6 @@ while True:
         make_move()
         user_moves()
     except:
-        print(f"End of game. That lasted {move_num} moves!")
+        print(f"End of game. That lasted {move_num} turns!")
         break
+
