@@ -136,6 +136,8 @@ class Castle(Action):
             rook.location.piece = None
             game["f"][backrank].piece = rook
             rook.location = game["f"][backrank]
+
+        game.reset_en_passant
         update_threats(game)
 
 
@@ -177,7 +179,7 @@ class Move(Action):
 
     # Methods
 
-    ## __init__(self, from_col: str, from_row: int, to_col: str, to_row: int)
+    ## __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_col: str|None=None, en_passant_square_row: int|None=None)
     Pretty self-explanatory.
 
     ## perform_on(self, game: board.Board)
@@ -187,7 +189,7 @@ class Move(Action):
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
     """
 
-    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0, promotion_type: board.PieceType|None = None):
+    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_row: int|None=None, en_passant_square_col: str|None=None):
         super().__init__()
         self.from_col = from_col
         self.from_row = from_row
@@ -195,6 +197,9 @@ class Move(Action):
         self.to_row = to_row
         self.value = value
         self.promotion = promotion_type
+        self.en_passant_vulnerable = en_passant_vulnerable
+        self.en_passant_square_row = en_passant_square_row
+        self.en_passant_square_col = en_passant_square_col
 
     def perform_on(self, game: board.Board):
         from_square = game[self.from_col][self.from_row]
@@ -217,8 +222,16 @@ class Move(Action):
         if self.promotion != None:
             to_square.piece.ptype = self.promotion
 
+        #en passant
+        if self.en_passant_square_row != None and self.en_passant_square_col != None:
+            square = game[self.en_passant_square_col][self.en_passant_square_row]
+            game.pieces.remove(square.piece)
+            square.piece = None
+
         #update board because I'll forget to do it later
+        game.reset_en_passant()
         update_threats(game)
+        to_square.piece.en_passant = self.en_passant_vulnerable
 
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
@@ -287,7 +300,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
         middle_piece = game[loc.col][loc.row + direction].piece
         last_piece = game[loc.col][loc.row + (direction * 2)].piece
         if middle_piece == None and last_piece == None:
-            moves.append(Move(loc.col, loc.row, loc.col, loc.row + (direction * 2)))
+            moves.append(Move(loc.col, loc.row, loc.col, loc.row + (direction * 2), en_passant_vulnerable=True))
 
     #diagonals
     col_num = LETTERS.index(loc.col)
@@ -297,6 +310,23 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     #right diagonal
     if col_num < 7 and game[LETTERS[col_num + 1]][loc.row + direction].piece != None and game[LETTERS[col_num + 1]][loc.row + direction].piece.color != piece.color:
         moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction))
+
+    #en passant
+    if col_num > 0 and game[LETTERS[col_num - 1]][loc.row].piece != None:
+        en_passant_square = game[LETTERS[col_num - 1]][loc.row]
+        en_passant_piece = en_passant_square.piece
+
+        if en_passant_piece != None:
+            if en_passant_piece.ptype == board.PieceType.PAWN and en_passant_piece.en_passant:
+                moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col))
+    
+    if col_num < 7 and game[LETTERS[col_num + 1]][loc.row].piece != None:
+        en_passant_square = game[LETTERS[col_num - 1]][loc.row]
+        en_passant_piece = en_passant_square.piece
+
+        if en_passant_piece != None:
+            if en_passant_piece.ptype == board.PieceType.PAWN and en_passant_piece.en_passant:
+                moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col))
 
     return moves
 

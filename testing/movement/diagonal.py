@@ -12,6 +12,4 @@ testlib.register_function_test(lambda: movement.potential_moves(game["d"][7].pie
 
 #legal moves - with mayhem!
 game["c"][4].piece = board.Piece(board.PieceType.QUEEN, board.PieceColor.BLACK, game["c"][4])
-#this part doesn't use testlib, but I need it anyway
-pprint(movement.potential_moves(game["c"][4].piece, game))
 

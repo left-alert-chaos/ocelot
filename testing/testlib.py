@@ -113,12 +113,9 @@ def run_all(directory: str="."):
             for nested in os.listdir(test):
                 queue.append(nested)
             continue
-
-        if run_file(test):
-            print(f"All tests in file '{test}' passed.")
-        else:
-            print(f"Not all tests in file '{test}' passed.")
-            fail = True
+        
+        #run tests and check for fail
+        fail = True if not run_file(test) else False
 
     print(f"\n\nAll tests complete ({num_of_tests}).")
     if not fail:

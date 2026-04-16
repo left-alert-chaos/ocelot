@@ -91,6 +91,7 @@ class Piece:
     ptype: PieceType - The type of the piece
     color: PieceColor - The color of the piece
     location: Square - The square the is on
+    en_passant: bool=False - Whether the piece can be captured with en passant.
     """
     
     def __init__(self, ptype: PieceType, color: PieceColor, location: Square):
@@ -98,6 +99,7 @@ class Piece:
         self.color = color
         self.location = location
         self.has_moved = False
+        self.en_passant = False
 
     def __str__(self) -> str:
         return f"{self.color.name} {self.ptype.name} on {self.location}"
@@ -143,6 +145,9 @@ class Board:
 
     ## add_pawns(self, col: list[Square])
     Adds pawns to second and second-to-last squares in column.
+
+    ## reset_en_passant(self)
+    Sets all pieces' en_pssant attributes to False.
     """
 
     def __init__(self, default_pos: bool=True):
@@ -201,4 +206,8 @@ class Board:
         col[6].piece = Piece(PieceType.PAWN, PieceColor.BLACK, col[6])
         self.pieces.append(col[1].piece)
         self.pieces.append(col[6].piece)
+
+    def reset_en_passant(self):
+        for piece in self.pieces:
+            piece.en_passant = False
 
