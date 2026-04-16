@@ -187,13 +187,14 @@ class Move(Action):
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
     """
 
-    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0):
+    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0, promotion_type: board.PieceType|None = None):
         super().__init__()
         self.from_col = from_col
         self.from_row = from_row
         self.to_col = to_col
         self.to_row = to_row
         self.value = value
+        self.promotion = promotion_type
 
     def perform_on(self, game: board.Board):
         from_square = game[self.from_col][self.from_row]
@@ -204,12 +205,17 @@ class Move(Action):
         if to_square.piece != None:
             game.pieces.remove(to_square.piece)
 
+        #actually move the piece
         to_square.piece = copy.deepcopy(from_square.piece)
         game.pieces.append(to_square.piece)
         to_square.piece.has_moved = True
         to_square.piece.location = to_square
         game.pieces.remove(from_square.piece)
         from_square.piece = None
+
+        #check for promotion
+        if self.promotion != None:
+            to_square.piece.ptype = self.promotion
 
         #update board because I'll forget to do it later
         update_threats(game)
@@ -228,11 +234,16 @@ class Move(Action):
 
 
     def __str__(self) -> str:
-        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
+        string = f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
+        if self.promotion != None:
+            string += f"; promotes to {self.promotion}"
+        return string
 
     def __repr__(self) -> str:
-        return f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
-
+        string = f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
+        if self.promotion != None:
+            string += f"; promotes to {self.promotion}"
+        return string
 
 class MoveException(Exception):
     """Exception raised when something goes wrong with a move."""
@@ -509,6 +520,10 @@ def project_diagonal(col_change: int, row_change: int, start: board.Square, game
             break
         
         buffer.append((peek_square, peek_value))
+
+        #check if break is necessary
+        if peek_value > 0 and peek_value != None:
+            break
 
         #move
         col_num += col_change
