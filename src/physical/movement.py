@@ -318,7 +318,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 
         if en_passant_piece != None:
             if en_passant_piece.ptype == board.PieceType.PAWN and en_passant_piece.en_passant:
-                moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col))
+                moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col, value=1))
     
     if col_num < 7 and game[LETTERS[col_num + 1]][loc.row].piece != None:
         en_passant_square = game[LETTERS[col_num - 1]][loc.row]
@@ -326,7 +326,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 
         if en_passant_piece != None:
             if en_passant_piece.ptype == board.PieceType.PAWN and en_passant_piece.en_passant:
-                moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col))
+                moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col, value=1))
 
     return moves
 
