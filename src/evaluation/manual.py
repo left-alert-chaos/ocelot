@@ -9,16 +9,22 @@ Runs all manual checks on board and returns net result.
 Checks if current player can immediately take opponent's queen.
 Returns 9 or -9 for hanging and 0 for not.
 
+## check_knights_on_rim(game: physical.board.Board, score: float)
+Checks for knights on the rim of the board and changes score.
+
 ## pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.PieceColor) -> list[board.Piece]
 Finds pieces with given color and type.
 """
 
-from physical import board, movement
+from physical import board
 
 
 def all_manual(game: board.Board, turn: board.PieceColor) -> float:
     score = 0.0
+    
     score += hanging_queen(game, turn)
+    check_knights_on_rim(game, score)
+    
     return score
 
 
@@ -37,4 +43,10 @@ def pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.Pi
         if piece.ptype == ptype and piece.color == color:
             pieces.append(piece)
     return pieces
+
+
+def check_knights_on_rim(game: board.Board, score: float):
+    for square in game["a"] + game["h"]:
+        if square.piece != None and square.piece.ptype == board.PieceType.KNIGHT:
+            score += 0.5 if square.piece.color == board.PieceColor.BLACK else -0.5
 

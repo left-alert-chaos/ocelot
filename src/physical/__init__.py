@@ -18,5 +18,3 @@ sys.path.append(os.path.dirname(__file__))
 import board
 import movement
 
-print("Successfully initialized physical module.")
-
