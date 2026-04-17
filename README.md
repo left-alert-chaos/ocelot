@@ -13,8 +13,8 @@ Modules marked unimplemented have not been written yet.
 ## physical
 Physical holds the physical representation of the board, moves, pieces, and colors. It is responsible for finding possible and legal moves and keeping track of which piece is there. As of writing this, it's also the only module close to done.
 
-## evaluation (unimplemented)
+## evaluation
 Evaluation evaluates the board. Shocking, right? It holds the code that reads a board and chooses who is winning and by how much.
 
-## bot (unimplemented)
-Bot holds the code that ties it all together into one ergonimic API. This module provides functions and classes that can actually play a game move-by-move.
+## bot
+Bot holds the code that ties it all together into one ergonimic (kinda) API. This module provides functions and classes that can actually play a game move-by-move.

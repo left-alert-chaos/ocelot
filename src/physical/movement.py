@@ -289,10 +289,12 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     direction = 1 if piece.color == board.PieceColor.WHITE else -1
     moves = []
     loc = piece.location
+    backrank = 0 if direction == 1 else 7
     
     #one square push
-    if loc.row < 7 and game[loc.col][loc.row + 1].piece == None:
-        moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction))
+    if loc.row < 7 and game[loc.col][loc.row + direction].piece == None:
+        promotion_piece = board.PieceType.QUEEN if loc.row + direction == backrank else None
+        moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction, promotion_type=promotion_piece))
 
     #two square push
     if not piece.has_moved:
@@ -318,7 +320,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 
         if en_passant_piece != None:
             if en_passant_piece.ptype == board.PieceType.PAWN and en_passant_piece.en_passant:
-                moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col))
+                moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col, value=1))
     
     if col_num < 7 and game[LETTERS[col_num + 1]][loc.row].piece != None:
         en_passant_square = game[LETTERS[col_num - 1]][loc.row]
@@ -326,7 +328,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
 
         if en_passant_piece != None:
             if en_passant_piece.ptype == board.PieceType.PAWN and en_passant_piece.en_passant:
-                moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col))
+                moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction, en_passant_square_row=en_passant_square.row, en_passant_square_col=en_passant_square.col, value=1))
 
     return moves
 

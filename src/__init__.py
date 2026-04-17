@@ -15,6 +15,5 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 import physical
-
-print("Module src initialized.")
+import evaluation
 
