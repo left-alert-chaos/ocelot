@@ -16,5 +16,5 @@ Physical holds the physical representation of the board, moves, pieces, and colo
 ## evaluation
 Evaluation evaluates the board. Shocking, right? It holds the code that reads a board and chooses who is winning and by how much.
 
-## bot (unimplemented)
+## bot
 Bot holds the code that ties it all together into one ergonimic (kinda) API. This module provides functions and classes that can actually play a game move-by-move.

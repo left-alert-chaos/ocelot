@@ -289,10 +289,12 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     direction = 1 if piece.color == board.PieceColor.WHITE else -1
     moves = []
     loc = piece.location
+    backrank = 0 if direction == 1 else 7
     
     #one square push
-    if loc.row < 7 and game[loc.col][loc.row + 1].piece == None:
-        moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction))
+    if loc.row < 7 and game[loc.col][loc.row + direction].piece == None:
+        promotion_piece = board.PieceType.QUEEN if loc.row + direction == backrank else None
+        moves.append(Move(loc.col, loc.row, loc.col, loc.row + direction, promotion_type=promotion_piece))
 
     #two square push
     if not piece.has_moved:

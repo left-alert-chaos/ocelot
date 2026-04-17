@@ -7,7 +7,7 @@ Moves, locations, piece types, the works.
 Holds Board() class and Piece() class and piece types
 
 ## movement
-Holds Move() type.
+Holds Move() and Castle() types and calculates legal moves.
 """
 
 #allow files to be imported
