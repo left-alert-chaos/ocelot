@@ -143,21 +143,19 @@ class Castle(Action):
 
     def is_illegal(self, game: board.Board) -> bool:
         if is_check(self.color, game):
-            print("Castle is illegal because check")
             return True
+
         rook_col = "h" if self.side == CastleSide.KING else "a"
         backrank = 0 if self.color == board.PieceColor.WHITE else 7
         rook = game[rook_col][backrank].piece
 
         #check rook legality
         if rook == None or rook.has_moved or rook.color != self.color:
-            print("castle is illegal because rook is invalid")
             return True
 
         #king legality
         king = game["e"][backrank].piece
         if king == None or king.has_moved:
-            print("castle is illegal because king is invalid")
             return True
 
         #check clear backrank
@@ -289,7 +287,7 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     direction = 1 if piece.color == board.PieceColor.WHITE else -1
     moves = []
     loc = piece.location
-    backrank = 0 if direction == 1 else 7
+    backrank = 7 if direction == 1 else 0
     
     #one square push
     if loc.row < 7 and game[loc.col][loc.row + direction].piece == None:

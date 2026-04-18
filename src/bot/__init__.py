@@ -5,8 +5,17 @@
 ## Sophisticate
 The bot.
 
-## GameException
-An exception for use when no legal moves could be found or some other reason prevents a move from being found or played."""
+## GameException(Exception)
+An exception for use when no legal moves could be found or some other reason prevents a move from being found or played.
+
+## WinException(GameException)
+An exception raised if the bot wins.
+
+## LossException(GameException)
+An exception raised if the bot loses.
+
+## StalemateException(GameException)
+An exception raised if no legal moves could be found but there isn't check."""
 
 import os
 import sys
@@ -27,7 +36,7 @@ class Sophisticate:
     Initializes the bot to find the best moves for the given side.
 
     ## best_move(self) -> physical.movement.Move:
-    (hopefully) finds the best move for the bot's color. It does NOT play the move, only returning it.
+    (hopefully) finds the best legal move for the bot's color. It does NOT play the move, only returning it.
     """
 
     def __init__(self, game: board.Board, color: board.PieceColor):
@@ -41,23 +50,43 @@ class Sophisticate:
         for piece in pieces:
             moves += movement.potential_moves(piece, self.game)
         moves = [move for move in moves if not move.is_illegal(self.game)]
+
         #if this isn't suffled, it always plays the same game given tieing moves.
         random.shuffle(moves)
         if len(moves) == 0:
-            raise GameException("No legal moves could be found.")
+            if movement.is_check(self.color, self.game):
+                raise LossException("I lost by checkmate!")
+            else:
+                raise StalemateException("I don't have any legal moves, but I'm not in check.")
 
         best_move = moves[0]
-        best_score = evaluation.evaluate_move(moves[0], self.game)
         for move in moves:
-            score = evaluation.evaluate_move(move, self.game)
-            if score >= best_score:
-                best_score = score
+            move.value = evaluation.evaluate_move(move, self.game)
+            if move.value >= best_move.value:
                 best_move = move
         return best_move
 
 
 class GameException(Exception):
     """An exception for use when no legal moves could be found or some other reason prevents a move from being found or played."""
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class WinException(GameException):
+    """An exception raised when the bot wins."""
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class LossException(GameException):
+    """An exception raised when the bot loses."""
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class StalemateException(GameException):
+    """An exception raised when no legal moves could be found."""
     def __init__(self, message: str):
         super().__init__(message)
 
