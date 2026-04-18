@@ -107,6 +107,13 @@ class Piece:
     def __repr__(self) -> str:
         return f"{self.color.name} {self.ptype.name} on {self.location}"
 
+    def __eq__(self, other) -> bool:
+        if other == None: return False
+        return self.ptype == other.ptype and self.color == other.color
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
 
 class Board:
     """Class to represent a chess board.
@@ -176,6 +183,15 @@ class Board:
     
     def __repr__(self) -> str:
         return self.squares.__str__()
+
+    def __eq__(self, other) -> bool:
+        for col_name in "abcdefgh":
+            for row in range(8):
+                if self[col_name][row] != other[col_name][row]: return False
+        return True
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
 
     def black_pieces(self) -> list[Piece]:
         return [piece for piece in self.pieces if piece.color == PieceColor.BLACK]

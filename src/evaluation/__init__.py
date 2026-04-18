@@ -21,6 +21,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(__file__))
 from manual import white_total_piece_value, black_total_piece_value, non_predictive
+import search
 from physical import movement, board
 import copy
 

@@ -45,6 +45,11 @@ Updates threats for only the given color.
 
 ## is_check(color: board.PieceColor, game: board.Board) -> bool
 Checks if king is threatened and returns True if it is.
+
+## white_legal_moves(game: board.Board) -> list[Move | Castle]
+Finds all white moves.
+
+## black_legal_moves(game: board.Board) -> list[Move | Castle]
 """
 
 import board
@@ -605,6 +610,20 @@ def is_check(color: board.PieceColor, game: board.Board) -> bool:
 class PieceException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+
+def white_legal_moves(game: board.Board) -> list[Move | Castle]:
+    moves = []
+    for piece in game.white_pieces():
+        moves += potential_moves(piece, game)
+    return [move for move in moves if not move.is_illegal(game)]
+
+
+def black_legal_moves(game: board.Board) -> list[Move | Castle]:
+    moves = []
+    for piece in game.black_pieces():
+        moves += potential_moves(piece, game)
+    return [move for move in moves if not move.is_illegal(game)]
 
 
 LETTERS = "abcdefgh"
