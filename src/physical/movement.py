@@ -176,6 +176,9 @@ class Castle(Action):
     def __repr__(self) -> str:
         return f"{self.color.name} castles {self.side.name}side."
 
+    def __hash__(self) -> int:
+        return hash(str(self))
+
 
 class Move(Action):
     """Simple class to represent a move.
@@ -192,7 +195,7 @@ class Move(Action):
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
     """
 
-    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: int=0, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_row: int|None=None, en_passant_square_col: str|None=None):
+    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: float=0.0, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_row: int|None=None, en_passant_square_col: str|None=None):
         super().__init__()
         self.from_col = from_col
         self.from_row = from_row
@@ -239,7 +242,10 @@ class Move(Action):
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
         local_board = copy.deepcopy(game)
-        self.perform_on(local_board)
+        try:
+            self.perform_on(local_board)
+        except:
+            return True
 
         if from_square.piece == None:
             print(f"{self} is illegal because it is from a square without a piece.")
@@ -260,6 +266,10 @@ class Move(Action):
         if self.promotion != None:
             string += f"; promotes to {self.promotion}"
         return string
+    
+    def __hash__(self) -> int:
+        return hash(str(self))
+
 
 class MoveException(Exception):
     """Exception raised when something goes wrong with a move."""

@@ -28,28 +28,33 @@ import random
 
 
 class Sophisticate:
-    """A chess bot that can play one side of the game.
+    """# Sophisticate
+    A chess bot that can play one side of the game.
 
     # Methods
 
     ## __init__(self, game: physical.board.Board, color: physical.board.PieceColor)
     Initializes the bot to find the best moves for the given side.
 
-    ## best_move(self) -> physical.movement.Move:
+    ## best_move(self) -> physical.movement.Move
     (hopefully) finds the best legal move for the bot's color. It does NOT play the move, only returning it.
+
+    ## random_best_move(self) -> physical.movement.Move
+    Returns a scored random move. best_move()'s fallback if the search doesn't turn anything up.
     """
 
     def __init__(self, game: board.Board, color: board.PieceColor):
         self.game = game
         self.color = color
 
-    def best_move(self) -> movement.Move:
-        #score moves
-        pieces = self.game.white_pieces() if self.color == board.PieceColor.WHITE else self.game.black_pieces()
-        moves = []
-        for piece in pieces:
-            moves += movement.potential_moves(piece, self.game)
-        moves = [move for move in moves if not move.is_illegal(self.game)]
+    def best_move(self) -> movement.Move | movement.Castle:
+        deep_result = evaluation.search.SearchTree(self.game, self.color, 4).best_move()
+        if deep_result != None: return deep_result
+        print("Sophisticate.best_move(): reverting to random_best_move()")
+        return self.random_best_move()
+
+    def random_best_move(self) -> movement.Move | movement.Castle:
+        moves = movement.black_legal_moves(self.game) if self.color == board.PieceColor.BLACK else movement.white_legal_moves(self.game)
 
         #if this isn't suffled, it always plays the same game given tieing moves.
         random.shuffle(moves)
