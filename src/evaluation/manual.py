@@ -20,9 +20,14 @@ How many piece points black has.
 ## non_predictive(game: physical.board.Board, turn: physical.board.PieceColor) -> float
 Returns a float of current tempo/who's winning (positive for white, negative for black).
 turn represents whose move it is.
+
+# Classes
+
+## StalemateException(Exception)
+Exception raised when the player whose turn it is has no legal moves.
 """
 
-from physical import board
+from physical import board, movement
 
 
 def all_manual(game: board.Board, turn: board.PieceColor) -> float:
@@ -33,10 +38,30 @@ def all_manual(game: board.Board, turn: board.PieceColor) -> float:
     return score
 
 
-def non_predictive(game: board.Board, turn: board.PieceColor) -> float:
+def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WHITE) -> float:
+    #end of game?
+    white_moves = movement.white_legal_moves(game)
+    black_moves = movement.black_legal_moves(game)
+    opponent = board.PieceColor.BLACK if turn == board.PieceColor.WHITE else board.PieceColor.WHITE
+    player_moves, opponent_moves = (white_moves, black_moves) if turn == board.PieceColor.WHITE else (black_moves, white_moves)
+    if len(player_moves) == 0:
+        if movement.is_check(turn, game):
+            return float("-inf")
+        else:
+            raise StalemateException(turn)
+    elif len(opponent_moves) == 0:
+        if movement.is_check(opponent, game):
+            return float("inf")
+        else:
+            raise StalemateException(opponent)
+
     #start with material
     score = white_total_piece_value(game) - black_total_piece_value(game)
     score += all_manual(game, turn)
+
+    if turn == board.PieceColor.BLACK:
+        score *= -1
+
     return float(score)
 
 
@@ -66,4 +91,17 @@ def check_knights_on_rim(game: board.Board, score: float):
     for square in game["a"] + game["h"]:
         if square.piece != None and square.piece.ptype == board.PieceType.KNIGHT:
             score += 0.5 if square.piece.color == board.PieceColor.BLACK else -0.5
+
+
+class StalemateException(Exception):
+    """# StalemateException
+    Error raised when a person has no legal moves.
+
+    # Methods
+
+    ## __init__(self, color: physical.board.PieceColor)
+    Initializes the exception."""
+    
+    def __init__(self, color: board.PieceColor):
+        super().__init__(f"Player {color.name} has no legal moves.")
 

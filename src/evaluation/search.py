@@ -12,7 +12,6 @@ Holds a root SearchNode and handles evaluation of many end points.
 from physical import movement, board
 import copy
 import manual
-import random
 
 
 class SearchTree:
@@ -45,7 +44,7 @@ class SearchTree:
     Checks if value > current best value. If it is, best_position becomes position.
     Returns whether the new position was better or equal.
 
-    ## best_move(self) -> movement.Move
+    ## best_move(self) -> movement.Move | movement.Castle | None
     Traverses parents of best position until a depth 1 move is reached.
     """
 
@@ -56,15 +55,13 @@ class SearchTree:
         self.best_value = 0.0
         self.best_position = self.root
 
-        self.root.populate(depth)
+        self.root.alphabeta(depth, float("-inf"), float("inf"), True)
     
-    def try_best_position(self, position) -> bool:
-        if position.value > self.best_value:
-            print("setting best_position")
+    def try_best_position(self, position):
+        value = manual.non_predictive(position.game, self.color)
+        if value > self.best_value:
             self.best_value = position.value
             self.best_position = position
-        
-        return position.value >= self.best_value
 
     def best_move(self) -> movement.Move | movement.Castle | None:
         if self.best_position == self.root: return
@@ -78,7 +75,7 @@ class SearchTree:
 
         #find move that led to position
         for (move, local_pos) in self.root.move_results.items():
-            if local_pos == position:
+            if local_pos is position:
                 return move
         
         print("couldn't find position's parent.")
@@ -128,27 +125,48 @@ class SearchNode:
         self.tree = tree
         self.parent = parent
     
-    def populate(self, depth: int) -> bool:
-        good = self.tree.try_best_position(self)
-        if not good:
-            return False
-        elif depth < 1:
-            return True
-        
-        moves = movement.white_legal_moves(self.game) if self.color == board.PieceColor.WHITE else movement.black_legal_moves(self.game)
-        random.shuffle(moves)
-        for move in moves:
-            temp_game = copy.deepcopy(self.game)
-            move.perform_on(temp_game)
-            new_node = SearchNode(temp_game, self.opponent_color, self.tree, self)
-            result = new_node.populate(depth - 1)
+    #brazenly stolen from https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning#Pseudocode
+    def alphabeta(self, depth: int, alpha: float | int, beta: float | int, maximizing_player: bool) -> float:
+        self.tree.try_best_position(self)
+        if depth == 0 or self.value == float("inf") or self.value == float("-inf"):
+            #opposite if not maximizing to translate value to bot's understanding
+            return self.value * (1 if maximizing_player else -1)
 
-            #if it's worse, prune branch
-            if not result:
-                break
-            self.children.append(new_node)
-            self.move_results[move] = new_node
-        return True
+        moves = movement.white_legal_moves(self.game) if self.color == board.PieceColor.WHITE else movement.black_legal_moves(self.game)
+
+        if maximizing_player:
+            value = float("-inf")
+            for move in moves:
+                #create child
+                temp_game = copy.deepcopy(self.game)
+                move.perform_on(temp_game)
+                child = SearchNode(temp_game, self.opponent_color, self.tree, self)
+                self.children.append(child)
+                self.move_results[move] = child
+
+                #pruning
+                value = max(value, child.alphabeta(depth - 1, alpha, beta, False))
+                if value >= beta:
+                    break
+                alpha = max(alpha, value)
+        else:
+            value = float("inf")
+            for move in moves:
+                #create child
+                temp_game = copy.deepcopy(self.game)
+                move.perform_on(temp_game)
+                child = SearchNode(temp_game, self.opponent_color, self.tree, self)
+                self.children.append(child)
+                self.move_results[move] = child
+
+                #pruning
+                value = min(value, child.alphabeta(depth - 1, alpha, beta, True))
+                if value <= alpha:
+                    break
+                beta = min(beta, value)
+            value *= -1
+        return value
+
 
     def __eq__(self, other) -> bool:
         return self.game == other.game

@@ -45,8 +45,7 @@ def evaluate_move(move: movement.Move | movement.Castle, game: board.Board) -> f
     after_score = non_predictive(test_game, opponent_color)
 
     #flip score for black
-    net = after_score - before_score
-    return net if player_color == board.PieceColor.WHITE else -1 * net
+    return after_score - before_score
 
 
 class EvaluationException(Exception):

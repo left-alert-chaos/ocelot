@@ -1,3 +1,4 @@
 #ignore any __pycache__
 **/__pycache__
 **/__cache__
+**/line_counter.py

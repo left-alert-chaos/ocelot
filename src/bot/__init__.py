@@ -33,23 +33,28 @@ class Sophisticate:
 
     # Methods
 
-    ## __init__(self, game: physical.board.Board, color: physical.board.PieceColor)
+    ## __init__(self, game: physical.board.Board, color: physical.board.PieceColor, depth: int=4)
     Initializes the bot to find the best moves for the given side.
 
     ## best_move(self) -> physical.movement.Move
     (hopefully) finds the best legal move for the bot's color. It does NOT play the move, only returning it.
+    Uses evaluation.search module, with depth from initialization.
 
     ## random_best_move(self) -> physical.movement.Move
     Returns a scored random move. best_move()'s fallback if the search doesn't turn anything up.
     """
 
-    def __init__(self, game: board.Board, color: board.PieceColor):
+    def __init__(self, game: board.Board, color: board.PieceColor, depth: int=4):
         self.game = game
         self.color = color
+        self.depth = depth
 
     def best_move(self) -> movement.Move | movement.Castle:
-        deep_result = evaluation.search.SearchTree(self.game, self.color, 4).best_move()
-        if deep_result != None: return deep_result
+        tree = evaluation.search.SearchTree(self.game, self.color, self.depth)
+        deep_result = tree.best_move()
+        if deep_result != None:
+            print(f"Deep result value: {tree.best_value}")
+            return deep_result
         print("Sophisticate.best_move(): reverting to random_best_move()")
         return self.random_best_move()
 

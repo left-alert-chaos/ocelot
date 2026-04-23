@@ -88,6 +88,8 @@ class Castle(Action):
         super().__init__()
         self.side = side
         self.color = color
+        #incentivise castling
+        self.value: int | float = 3
 
     def perform_on(self, game: board.Board):
         pieces = game.white_pieces() if self.color == board.PieceColor.WHITE else game.black_pieces()
@@ -269,6 +271,13 @@ class Move(Action):
     
     def __hash__(self) -> int:
         return hash(str(self))
+
+    def __eq__(self, other) -> bool:
+        if other == None: return False
+        return self.to_col == other.to_col and self.to_row == other.to_row and self.from_col == other.from_col and self.from_row == other.from_row
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
 
 
 class MoveException(Exception):
@@ -609,10 +618,8 @@ def is_check(color: board.PieceColor, game: board.Board) -> bool:
         if piece.ptype == board.PieceType.KING:
             king = piece
             break
-    
-    #error
     if king == None:
-        raise PieceException(f"No {color.name} kings could be found, so check cannot be determined.")
+        return False
 
     return king.location in enemy_threats
 
@@ -626,14 +633,34 @@ def white_legal_moves(game: board.Board) -> list[Move | Castle]:
     moves = []
     for piece in game.white_pieces():
         moves += potential_moves(piece, game)
-    return [move for move in moves if not move.is_illegal(game)]
+
+    #crudely order moves
+    moves = [move for move in moves if not move.is_illegal(game)]
+    captures = []
+    non_captures = []
+    for move in moves:
+        if isinstance(move, Castle) or game[move.to_col][move.to_row].piece == None:
+            non_captures.append(move)
+        else:
+            captures.append(move)
+    return captures + non_captures
 
 
 def black_legal_moves(game: board.Board) -> list[Move | Castle]:
     moves = []
     for piece in game.black_pieces():
         moves += potential_moves(piece, game)
-    return [move for move in moves if not move.is_illegal(game)]
+
+    #crudely order moves
+    moves = [move for move in moves if not move.is_illegal(game)]
+    captures = []
+    non_captures = []
+    for move in moves:
+        if isinstance(move, Castle) or game[move.to_col][move.to_row].piece == None:
+            non_captures.append(move)
+        else:
+            captures.append(move)
+    return captures + non_captures
 
 
 LETTERS = "abcdefgh"
