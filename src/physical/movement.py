@@ -214,9 +214,11 @@ class Move(Action):
         to_square = game[self.to_col][self.to_row]
 
         if from_square.piece == None:
-            raise MoveException(f"This move ({self}) is illegal because it is from a square without a piece.")
+            raise MoveException(f"This move ({self}) is illegal and unplayable because it is from a square without a piece.")
         if to_square.piece != None:
-            game.pieces.remove(to_square.piece)
+            remove = game.pieces.count(to_square.piece)
+            for _ in range(remove):
+                game.pieces.remove(to_square.piece)
 
         #actually move the piece
         to_square.piece = copy.deepcopy(from_square.piece)

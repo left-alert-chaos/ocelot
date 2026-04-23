@@ -4,7 +4,9 @@ from physical import board, movement
 import bot
 
 game = board.Board()
-robot = bot.Sophisticate(game, board.PieceColor.WHITE, 3)
+choice = input("Please enter a depth to evaluate (3 is kinda slow, but decent play): ")
+depth = int(choice) if choice.isnumeric() else 3
+robot = bot.Sophisticate(game, board.PieceColor.WHITE, depth)
 
 def make_move():
     global game
