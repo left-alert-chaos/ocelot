@@ -1,4 +1,6 @@
-"""Module containing all custom evaluation checks.
+"""# manual
+Module containing all custom evaluation checks.
+All heuristics are written here.
 
 # Functions
 
@@ -7,6 +9,9 @@ Runs all manual checks on board and returns net result.
 
 ## check_knights_on_rim(game: physical.board.Board, score: float)
 Checks for knights on the rim of the board and changes score.
+
+## pawns_in_center(game: phyisical.board.Board, score: float)
+Checks for pawns in center 4 squares and awards 1 point each.
 
 ## pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.PieceColor) -> list[board.Piece]
 Finds pieces with given color and type.
@@ -34,6 +39,7 @@ def all_manual(game: board.Board, turn: board.PieceColor) -> float:
     score = 0.0
     
     check_knights_on_rim(game, score)
+    pawns_in_center(game, score)
     
     return score
 
@@ -62,7 +68,7 @@ def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WH
     if turn == board.PieceColor.BLACK:
         score *= -1
 
-    return float(score)
+    return score
 
 
 def white_total_piece_value(game: board.Board) -> int:
@@ -91,6 +97,20 @@ def check_knights_on_rim(game: board.Board, score: float):
     for square in game["a"] + game["h"]:
         if square.piece != None and square.piece.ptype == board.PieceType.KNIGHT:
             score += 0.5 if square.piece.color == board.PieceColor.BLACK else -0.5
+
+
+def pawns_in_center(game: board.Board, score: float):
+    #private function to look at a square for pawns
+    def check_square(square: board.Square, score: float):
+        if square.piece == None:
+            return
+        if square.piece.ptype == board.PieceType.PAWN:
+            score += 1 if square.piece.color == board.PieceColor.BLACK else -1
+
+    check_square(game["d"][3], score)
+    check_square(game["d"][4], score)
+    check_square(game["e"][3], score)
+    check_square(game["e"][4], score)
 
 
 class StalemateException(Exception):
