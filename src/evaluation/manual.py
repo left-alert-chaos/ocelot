@@ -5,36 +5,78 @@
 ## all_manual(game: physical.board.Board, turn: physical.board.PieceColor) -> float
 Runs all manual checks on board and returns net result.
 
-## hanging_queen(game: physical.board.Board, turn: physical.board.PieceColor) -> int
-Checks if current player can immediately take opponent's queen.
-Returns 9 or -9 for hanging and 0 for not.
-
 ## check_knights_on_rim(game: physical.board.Board, score: float)
 Checks for knights on the rim of the board and changes score.
 
 ## pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.PieceColor) -> list[board.Piece]
 Finds pieces with given color and type.
+
+## white_total_piece_value(game: physical.board.Board) -> int
+How many piece points white has.
+
+## black_total_piece_value(game: physical.board.Board) -> int
+How many piece points black has.
+
+## non_predictive(game: physical.board.Board, turn: physical.board.PieceColor) -> float
+Returns a float of current tempo/who's winning (positive for white, negative for black).
+turn represents whose move it is.
+
+# Classes
+
+## StalemateException(Exception)
+Exception raised when the player whose turn it is has no legal moves.
 """
 
-from physical import board
+from physical import board, movement
 
 
 def all_manual(game: board.Board, turn: board.PieceColor) -> float:
     score = 0.0
     
-    score += hanging_queen(game, turn)
     check_knights_on_rim(game, score)
     
     return score
 
 
-def hanging_queen(game: board.Board, turn: board.PieceColor) -> int:
-    threats = game.squares_white_threatens if turn == board.PieceColor.WHITE else game.squares_black_threatens
-    opponent_queens = pieces_from_color(game, board.PieceType.QUEEN, board.PieceColor.BLACK if turn == board.PieceColor.WHITE else board.PieceColor.WHITE)
-    for opponent_queen in opponent_queens:
-        if opponent_queen in threats:
-            return 9 if turn == board.PieceColor.WHITE else -9
-    return 0
+def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WHITE) -> float:
+    #end of game?
+    white_moves = movement.white_legal_moves(game)
+    black_moves = movement.black_legal_moves(game)
+    opponent = board.PieceColor.BLACK if turn == board.PieceColor.WHITE else board.PieceColor.WHITE
+    player_moves, opponent_moves = (white_moves, black_moves) if turn == board.PieceColor.WHITE else (black_moves, white_moves)
+    if len(player_moves) == 0:
+        if movement.is_check(turn, game):
+            return float("-inf")
+        else:
+            raise StalemateException(turn)
+    elif len(opponent_moves) == 0:
+        if movement.is_check(opponent, game):
+            return float("inf")
+        else:
+            raise StalemateException(opponent)
+
+    #start with material
+    score = white_total_piece_value(game) - black_total_piece_value(game)
+    score += all_manual(game, turn)
+
+    if turn == board.PieceColor.BLACK:
+        score *= -1
+
+    return float(score)
+
+
+def white_total_piece_value(game: board.Board) -> int:
+    value = 0
+    for piece in game.white_pieces():
+        value += piece.ptype.value
+    return value
+
+
+def black_total_piece_value(game: board.Board) -> int:
+    value = 0
+    for piece in game.black_pieces():
+        value += piece.ptype.value
+    return value
     
 
 def pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.PieceColor) -> list[board.Piece]:
@@ -49,4 +91,17 @@ def check_knights_on_rim(game: board.Board, score: float):
     for square in game["a"] + game["h"]:
         if square.piece != None and square.piece.ptype == board.PieceType.KNIGHT:
             score += 0.5 if square.piece.color == board.PieceColor.BLACK else -0.5
+
+
+class StalemateException(Exception):
+    """# StalemateException
+    Error raised when a person has no legal moves.
+
+    # Methods
+
+    ## __init__(self, color: physical.board.PieceColor)
+    Initializes the exception."""
+    
+    def __init__(self, color: board.PieceColor):
+        super().__init__(f"Player {color.name} has no legal moves.")
 

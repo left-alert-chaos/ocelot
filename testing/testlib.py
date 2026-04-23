@@ -40,7 +40,7 @@ fails = 0
 num_of_tests = 0
 
 
-def test_function(func: types.FunctionType, expected_result, name: str="") -> bool:
+def test_function(func: types.FunctionType | types.MethodType, expected_result, name: str="") -> bool:
     global fails
     fail = False
     err = None
