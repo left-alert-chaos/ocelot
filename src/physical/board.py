@@ -26,6 +26,7 @@ A piece on the board, holding color, type, and location.
 The board itself. Holds columns, rows, and sets up starting position by default.
 """
 from enum import Enum
+import copy
 
 
 class Square:
@@ -46,6 +47,16 @@ class Square:
 
     def __repr__(self) -> str:
         return f"Square {self.col}{self.row} (0-indexed; {self.col}{self.row + 1} in standard notation)"
+
+    def __eq__(self, other) -> bool:
+        return self.piece == other.piece and self.col == other.col and self.row == other.row
+    
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self) -> int:
+        #be laaaaaaazy
+        return hash(str(self))
 
 
 def col_row(square: Square) -> tuple[str, int]:
@@ -155,6 +166,9 @@ class Board:
 
     ## reset_en_passant(self)
     Sets all pieces' en_pssant attributes to False.
+
+    ## duplicate(self) -> Board
+    Creates a new board identical to this one.
     """
 
     def __init__(self, default_pos: bool=True):
@@ -226,4 +240,20 @@ class Board:
     def reset_en_passant(self):
         for piece in self.pieces:
             piece.en_passant = False
+    
+    def duplicate(self):
+        new = Board(False)
+
+        #iterate over columns and rows
+        for col in "abcdefgh":
+            for row in range(8):
+                piece = self[col][row].piece
+                if piece == None:
+                    continue
+
+                #copy piece
+                new_piece = Piece(copy.deepcopy(piece.ptype), copy.deepcopy(piece.color), new[col][row])
+                new.pieces.append(new_piece)
+                new[col][row].piece = new_piece
+        return new
 

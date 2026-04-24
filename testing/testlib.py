@@ -25,18 +25,18 @@ Runs all python files in testing/. directory.
 If the directory argument is specified, that directory is moved to after moving to testing. This can be used to specify which testing suite to run.
 Exits with a code defined above.
 
-## run_file(fname: str) -> bool
-Runs one file in testing/ directory. Returns True if all tests pass in file.
+## run_file(fname: str) -> int
+Runs one file in testing/ directory. Returns number of tests that failed.
 """
 # be nice and allow importing of other modules so I don't have to write this more than I have to
 import os
 import sys
 sys.path.append(os.path.dirname(__file__) + "/..")
+sys.path.append(os.path.dirname(__file__) + "/.." + "/src")
 import types
 
 tests: list[types.FunctionType] = []
-SKIP = ("testlib.py", "__pycache__", "all.sh", "__cache__")
-fails = 0
+SKIP = ("testlib.py", "__pycache__", "all.sh", "__cache__", "pyc")
 num_of_tests = 0
 
 
@@ -57,7 +57,6 @@ def test_function(func: types.FunctionType | types.MethodType, expected_result, 
     
     if fail:
         print(f"Function test '{name}' failed due to {fail_reason}. Err: {err}")
-        fails += 1
     else:
         print(f"Function test '{name}' succeeded!")
     return not fail
@@ -73,7 +72,6 @@ def bool_assertion(assertion: bool, name: str="") -> bool:
         print(f"Bool assertion '{name}' succeeded (True)!")
     else:
         print(f"Bool assertion '{name}' failed (False).")
-        fails += 1
     return assertion
 
 
@@ -82,40 +80,41 @@ def register_bool_assertion(assertion: bool, name: str=""):
 
 
 def run_all(directory: str="."):
-    global fails
-    # Move to testing suite directory
+    # Move to testing suite directory and make everything importable
     if not os.getcwd().endswith("testing"):
         os.chdir("testing")
     os.chdir(directory)
-    loc = os.getcwd()
-    print(f"Running test suite at {loc}. (Also running files in nested dirs)")
-
-    #make local files importable
-    sys.path.append(loc)
+    print(f"Running test suite at {os.getcwd()}. (Also running files in nested dirs)")
 
     fail = False
-    queue = os.listdir()
-    
-    while True:
-        # queue management
-        if len(queue) == 0:
-            break
-        test = queue[0]
-        queue.pop(0)
+    fails = 0
+    queue = []
 
-        #skips
+    # populate beforehand to prevent messy ordering
+    for item in os.listdir():
+        if item.endswith(SKIP):
+            continue
+        if os.path.isfile(item):
+            print(f"Queueing {item}")
+            queue.append(item)
+        else:
+            print(f"Queueing files in {item}")
+            sys.path.append(item)
+            for sub in os.listdir(item): queue.append(f"{item}/{sub}")
+    
+    print(queue)
+    for test in queue:
         if test.endswith(SKIP):
             continue
 
-        # add nested files
-        if os.path.isdir(test):
-            sys.path.append(test)
-            for nested in os.listdir(test):
-                queue.append(nested)
+        if not os.path.isfile(test):
             continue
         
         #run tests and check for fail
-        fail = True if not run_file(test) else False
+        print(f"\n\nRunning file {test}")
+        result = run_file(test)
+        fails += result
+        fail = True if result > 0 else False
 
     print(f"\n\nAll tests complete ({num_of_tests}).")
     if not fail:
@@ -128,22 +127,24 @@ def run_all(directory: str="."):
 
 
 #returns true if all pass
-def run_file(fname: str) -> bool:
+def run_file(fname: str) -> int:
     global num_of_tests
 
     try:
-        tests = __import__(fname.replace(".py", "")).testlib.tests
+        # delete file extension and replace / with . for module naming
+        tests = __import__(fname.replace(".py", "").replace("/", ".")).testlib.tests
     except Exception as e:
         print(f"Couldn't find testlib module in test file '{fname}'. Skipping.")
         print(f"Error: {e}")
         return True
-    fail = False
+    fails = 0
 
     for test in tests:
         num_of_tests += 1
         if not test():
-            fail = True
-    return not fail
+            fails += 1
+        num_of_tests += 1
+    return fails
 
 
 if __name__ == "__main__":

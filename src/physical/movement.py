@@ -245,7 +245,7 @@ class Move(Action):
 
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
-        local_board = copy.deepcopy(game)
+        local_board = game.duplicate()
         try:
             self.perform_on(local_board)
         except:
@@ -600,7 +600,7 @@ def update_white_threats(game: board.Board):
     for piece in game.white_pieces():
         white_moves += potential_moves(piece, game)
     #remove dupes
-    game.squares_white_threatens = list({game[move.to_col][move.to_row] for move in white_moves if not isinstance(move, Castle)})
+    game.squares_white_threatens = list(set([game[move.to_col][move.to_row] for move in white_moves if not isinstance(move, Castle)]))
 
 
 def update_black_threats(game: board.Board):
@@ -621,6 +621,7 @@ def is_check(color: board.PieceColor, game: board.Board) -> bool:
             king = piece
             break
     if king == None:
+        print(f"WARNING: Not check because there is no {color.name} king!")
         return False
 
     return king.location in enemy_threats

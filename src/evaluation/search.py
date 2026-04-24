@@ -138,7 +138,7 @@ class SearchNode:
             value = float("-inf")
             for move in moves:
                 #create child
-                temp_game = copy.deepcopy(self.game)
+                temp_game = self.game.duplicate()
                 move.perform_on(temp_game)
                 child = SearchNode(temp_game, self.opponent_color, self.tree, self)
                 self.children.append(child)
@@ -153,7 +153,7 @@ class SearchNode:
             value = float("inf")
             for move in moves:
                 #create child
-                temp_game = copy.deepcopy(self.game)
+                temp_game = self.game.duplicate()
                 move.perform_on(temp_game)
                 child = SearchNode(temp_game, self.opponent_color, self.tree, self)
                 self.children.append(child)
