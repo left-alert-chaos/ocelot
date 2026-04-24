@@ -136,7 +136,7 @@ def run_file(fname: str) -> int:
     except Exception as e:
         print(f"Couldn't find testlib module in test file '{fname}'. Skipping.")
         print(f"Error: {e}")
-        return True
+        return 0
     fails = 0
 
     for test in tests:
@@ -144,6 +144,7 @@ def run_file(fname: str) -> int:
         if not test():
             fails += 1
         num_of_tests += 1
+    print(f"Done running file {fname}. Fails: {fails}")
     return fails
 
 
