@@ -59,5 +59,6 @@ while True:
     move_num += 1
     print(f"Move {move_num}")
     make_move()
+    print(game)
     user_moves() 
 

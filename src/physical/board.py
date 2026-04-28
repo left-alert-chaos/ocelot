@@ -30,17 +30,25 @@ import copy
 
 
 class Square:
-    """One square on the board.
+    """# Square
+    One square on the board.
 
     # Methods
 
     ## __init__(self, col: str, row: int)
-    Col is a regular board column (a - h). Row is a zero-indexed row. So, what GothamChess would call H8 would be Square(\"h\", 7)."""
+    Col is a regular board column (a - h). Row is a zero-indexed row. So, what GothamChess would call H8 would be Square(\"h\", 7).
+
+    ## draw(self) -> str
+    Returns very bad ascii art of the square."""
 
     def __init__(self, col: str, row: int):
         self.col = col
         self.row = row
         self.piece: Piece | None = None
+
+        #a very complicated-looking way to determine square color.
+        #If the row number plus the column number are even, black. else white
+        self.color = PieceColor.BLACK if (LETTERS.index(col) + row) % 2 == 0 else PieceColor.WHITE
 
     def __str__(self) -> str:
         return f"Square {self.col}{self.row} (0-indexed; {self.col}{self.row + 1} in standard notation)"
@@ -58,13 +66,19 @@ class Square:
         #be laaaaaaazy
         return hash(str(self))
 
+    def draw(self) -> str:
+        filler = "bb" if self.color == PieceColor.BLACK else "ww"
+        piece_repr = "  " if self.piece == None else self.piece.two_letter()
+
+        return f"{filler}{piece_repr}{filler}"
+
 
 def col_row(square: Square) -> tuple[str, int]:
     return (square.col, square.row)
 
 
 class PieceColor(Enum):
-    """Enum representing colors. BLACK is 0 and WHITE is 1. It probably doesn't even need a docstring. Bye!"""
+    """Enum representing colors. BLACK is 0 and WHITE is 1. Also represents board square colors."""
     BLACK = 0
     WHITE = 1
 
@@ -97,6 +111,9 @@ class Piece:
     ## __init__(self, ptype: PieceType, color: PieceColor, location: Square)
     Pretty self-explanatory.
 
+    ## two_letter(self) -> str
+    Returns 2-letter string of piece: 'BQ' for black queen, 'WK' for white king, and so on.
+
     # Attributes
 
     ptype: PieceType - The type of the piece
@@ -124,6 +141,10 @@ class Piece:
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
+
+    def two_letter(self) -> str:
+        #                                                knights should be represented with n instead of k
+        return f"{self.color.name[0]}{self.ptype.name[0] if self.ptype.name != 'KNIGHT' else 'N'}"
 
 
 class Board:
@@ -169,6 +190,9 @@ class Board:
 
     ## duplicate(self) -> Board
     Creates a new board identical to this one.
+
+    ## draw(self) -> str
+    Draws an ascii representation of the board. The default for __str__ and __repr__.
     """
 
     def __init__(self, default_pos: bool=True):
@@ -193,10 +217,10 @@ class Board:
         return self.squares[col_name]
 
     def __str__(self) -> str:
-        return self.squares.__str__()
+        return self.draw()
     
     def __repr__(self) -> str:
-        return self.squares.__str__()
+        return self.draw()
 
     def __eq__(self, other) -> bool:
         for col_name in "abcdefgh":
@@ -245,7 +269,7 @@ class Board:
         new = Board(False)
 
         #iterate over columns and rows
-        for col in "abcdefgh":
+        for col in LETTERS:
             for row in range(8):
                 piece = self[col][row].piece
                 if piece == None:
@@ -256,4 +280,20 @@ class Board:
                 new.pieces.append(new_piece)
                 new[col][row].piece = new_piece
         return new
+
+    def draw(self) -> str:
+        output = ""
+        #all row values, top to bottom
+        for row in range(7, -1, -1):
+            output += f"\n\n{row + 1}"
+            for column in LETTERS:
+                output += " | "
+                square = self[column][row]
+                output += square.draw()
+
+        #Skip first 2 newlines
+        return output[2::]
+
+
+LETTERS = "abcdefgh"
 
