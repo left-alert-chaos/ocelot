@@ -10,7 +10,6 @@ Class representing a node in a branching search. Holds a game and subseqent node
 Holds a root SearchNode and handles evaluation of many end points.
 """
 from physical import movement, board
-import copy
 import manual
 
 
@@ -62,6 +61,7 @@ class SearchTree:
         if value > self.best_value:
             self.best_value = position.value
             self.best_position = position
+            print("Set best position")
 
     def best_move(self) -> movement.Move | movement.Castle | None:
         if self.best_position == self.root: return
