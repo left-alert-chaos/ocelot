@@ -13,6 +13,12 @@ Checks for knights on the rim of the board and changes score.
 ## pawns_in_center(game: phyisical.board.Board, score: float)
 Checks for pawns in center 4 squares and awards 1 point each.
 
+## castling(game: physical.board.Board, score: float)
+Awards points for castling
+
+## freedom(game: physical.board.Board, score: float)
+An experimental heuristic that awards points for being able to move to more squares.
+
 ## pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.PieceColor) -> list[board.Piece]
 Finds pieces with given color and type.
 
@@ -40,6 +46,8 @@ def all_manual(game: board.Board, turn: board.PieceColor) -> float:
     
     check_knights_on_rim(game, score)
     pawns_in_center(game, score)
+    castling(game, score)
+    #freedom(game, score)
     
     return score
 
@@ -50,6 +58,8 @@ def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WH
     black_moves = movement.black_legal_moves(game)
     opponent = board.PieceColor.BLACK if turn == board.PieceColor.WHITE else board.PieceColor.WHITE
     player_moves, opponent_moves = (white_moves, black_moves) if turn == board.PieceColor.WHITE else (black_moves, white_moves)
+
+    #check for end of game and hard-code scores
     if len(player_moves) == 0:
         if movement.is_check(turn, game):
             return float("-inf")
@@ -111,6 +121,18 @@ def pawns_in_center(game: board.Board, score: float):
     check_square(game["d"][4], score)
     check_square(game["e"][3], score)
     check_square(game["e"][4], score)
+
+
+def castling(game: board.Board, score: float):
+    if game.white_castled: score += 2
+    elif game.black_castled: score -= 2
+
+
+def freedom(game: board.Board, score: float):
+    score += (
+            #reward being able to move to more places by subtracting lengths of legal move lists
+            len(movement.white_legal_moves(game)) - len(movement.black_legal_moves(game))
+    ) * 0.1
 
 
 class StalemateException(Exception):

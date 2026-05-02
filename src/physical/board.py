@@ -27,6 +27,10 @@ The board itself. Holds columns, rows, and sets up starting position by default.
 """
 from enum import Enum
 import copy
+import time
+
+#used to track how long duplication has taken
+elapsed_duplication = 0.0
 
 
 class Square:
@@ -161,6 +165,15 @@ class Board:
 
     ## squares_black_threatens: list[Square]
     All squares on the board that can be moved to by black.
+
+    ## pieces: list[Piece]
+    All pieces on the board.
+
+    ## white_castled: bool=False
+    Has white castled?
+
+    ## black_castled: bool=False
+    Has black castled?
     
     # Methods
 
@@ -202,6 +215,7 @@ class Board:
         self.threatened_squares = []
         self.squares_white_threatens = []
         self.squares_black_threatens = []
+        self.white_castled, self.black_castled = False, False
         for col in "abcdefgh":
             col_list = []
             for row in range(8):
@@ -223,7 +237,7 @@ class Board:
         return self.draw()
 
     def __eq__(self, other) -> bool:
-        for col_name in "abcdefgh":
+        for col_name in LETTERS:
             for row in range(8):
                 if self[col_name][row] != other[col_name][row]: return False
         return True
@@ -266,6 +280,8 @@ class Board:
             piece.en_passant = False
     
     def duplicate(self):
+        global elapsed_duplication
+        start = time.time()
         new = Board(False)
 
         #iterate over columns and rows
@@ -279,6 +295,7 @@ class Board:
                 new_piece = Piece(copy.deepcopy(piece.ptype), copy.deepcopy(piece.color), new[col][row])
                 new.pieces.append(new_piece)
                 new[col][row].piece = new_piece
+        elapsed_duplication += time.time() - start
         return new
 
     def draw(self) -> str:

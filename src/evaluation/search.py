@@ -164,7 +164,7 @@ class SearchNode:
                 if value <= alpha:
                     break
                 beta = min(beta, value)
-            value *= -1
+                value *= -1
         return value
 
 

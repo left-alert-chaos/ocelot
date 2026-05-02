@@ -145,6 +145,12 @@ class Castle(Action):
             rook.location = game["f"][backrank]
 
         game.reset_en_passant
+        
+        if self.color == board.PieceColor.WHITE: 
+            game.white_castled = True
+        else:
+            game.black_castled = True
+
         update_threats(game)
 
 
@@ -187,17 +193,21 @@ class Move(Action):
 
     # Methods
 
-    ## __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_col: str|None=None, en_passant_square_row: int|None=None)
+    ## __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_col: str|None=None, en_passant_square_row: int|None=None, undo: bool=False)
     Pretty self-explanatory.
+    Undo is whether the move is being used to undo a different move.
 
     ## perform_on(self, game: board.Board)
     Checks whether a piece is on from square. If there isn't, raises an exception. Else, moves the piece.
+
+    ## unperform_on(self, game: board.Board)
+    Undo move and uncapture pieces. Only reliable if move has already been performed.
 
     ## is_illegal(self, game: board.Board)
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
     """
 
-    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: float=0.0, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_row: int|None=None, en_passant_square_col: str|None=None):
+    def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: float=0.0, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_row: int|None=None, en_passant_square_col: str|None=None, undo: bool=False):
         super().__init__()
         self.from_col = from_col
         self.from_row = from_row
@@ -208,14 +218,25 @@ class Move(Action):
         self.en_passant_vulnerable = en_passant_vulnerable
         self.en_passant_square_row = en_passant_square_row
         self.en_passant_square_col = en_passant_square_col
+        self.opposite = None
+        self.capture_color = None
+        self.capture_type = None
+        self.has_been_performed = False
+        self.has_been_unperformed = False
+        self.is_undo = undo
 
     def perform_on(self, game: board.Board):
+        if self.is_undo: print("")
         from_square = game[self.from_col][self.from_row]
         to_square = game[self.to_col][self.to_row]
 
         if from_square.piece == None:
             raise MoveException(f"This move ({self}) is illegal and unplayable because it is from a square without a piece.")
         if to_square.piece != None:
+            #record capture info
+            self.capture_color = to_square.piece.color
+            self.capture_type = to_square.piece.ptype
+
             remove = game.pieces.count(to_square.piece)
             for _ in range(remove):
                 game.pieces.remove(to_square.piece)
@@ -238,26 +259,48 @@ class Move(Action):
             game.pieces.remove(square.piece)
             square.piece = None
 
+        self.has_been_performed = True
+
         #update board because I'll forget to do it later
         game.reset_en_passant()
         update_threats(game)
         to_square.piece.en_passant = self.en_passant_vulnerable
+    
+    def unperform_on(self, game: board.Board):
+        print(f"Unperforming {self}")
+        print(f"undo: {self.is_undo}")
+        self.has_been_unperformed = True
+        self.opposite = Move(self.to_col, self.to_row, self.from_col, self.from_row, undo=True)
+        self.opposite.perform_on(game)
+        #print(f"game[self.to_col][self.to_row].piece: {game[self.to_col][self.to_row].piece}")
+        #print(f"game[self.from_col][self.from_row].piece: {game[self.from_col][self.from_row].piece}")
+
+        #recreate captured piece
+        if self.capture_color != None and self.capture_type != None:
+            new_piece = board.Piece(self.capture_type, self.capture_color, game[self.to_col][self.to_row])
+            game.pieces.append(new_piece)
+            game[self.to_col][self.to_row].piece = new_piece
 
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
-        local_board = game.duplicate()
-        try:
-            self.perform_on(local_board)
-        except:
-            return True
-
         if from_square.piece == None:
             print(f"{self} is illegal because it is from a square without a piece.")
             return True
-
         color = from_square.piece.color
-        return is_check(color, local_board)
 
+        try:
+            self.perform_on(game)
+        except:
+            self.unperform_on(game)
+            return True
+
+        result = is_check(color, game)
+        self.unperform_on(game)
+        if result:
+            print(f"{self} is illegal")
+        else:
+            print(f"{self} is legal")
+        return result
 
     def __str__(self) -> str:
         string = f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"

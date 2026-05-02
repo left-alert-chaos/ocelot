@@ -1,12 +1,15 @@
-"""A sample implementation that uses the bot class. More a low-effort, unstable tech demo than anything else."""
+"""# tui
+A sample implementation that uses the bot class. More a low-effort, unstable tech demo than anything else."""
 
 from physical import board, movement
 import bot
+import sys
 
 game = board.Board()
 choice = input("Please enter a depth to evaluate (3 is kinda slow, but decent play): ")
 depth = int(choice) if choice.isnumeric() else 3
 robot = bot.Sophisticate(game, board.PieceColor.WHITE, depth)
+
 
 def make_move():
     global game
@@ -18,13 +21,19 @@ def make_move():
     move.perform_on(game)
     print(move)
 
+
 def user_moves():
     global game
-    move = input("Please enter a castle side (queen or king) or a move stylized as a1 a2 <promotion_type> (start with 'ep ' to en passant): ")
+    try:
+        move = input("Please enter a castle side (queen or king) or a move stylized as a1 a2 <promotion_type> (start with 'ep ' to en passant): ")
+    except KeyboardInterrupt:
+        print("Aborted.")
+        sys.exit()
     
     move = parse_move(move)
     move.perform_on(game)
     movement.update_threats(game)
+
 
 def parse_move(move: str) -> movement.Move | movement.Castle:
     global game
@@ -53,6 +62,7 @@ def parse_move(move: str) -> movement.Move | movement.Castle:
     else:
         side = movement.CastleSide.QUEEN if words[0].lower() == "queen" else movement.CastleSide.KING
         return movement.Castle(side, board.PieceColor.BLACK)
+
 
 move_num = 0
 while True:
