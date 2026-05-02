@@ -71,10 +71,10 @@ class Square:
         return hash(str(self))
 
     def draw(self) -> str:
-        filler = "bb" if self.color == PieceColor.BLACK else "ww"
-        piece_repr = "  " if self.piece == None else self.piece.two_letter()
-
-        return f"{filler}{piece_repr}{filler}"
+        bg = "\033[40m" if self.color == PieceColor.BLACK else "\033[47m"
+        fg = "\033[0;37m" if self.color == PieceColor.BLACK else "\033[30m"
+        piece = "  " if self.piece == None else self.piece.two_letter()
+        return f"{bg}{fg}{piece}\033[0m"
 
 
 def col_row(square: Square) -> tuple[str, int]:

@@ -226,7 +226,6 @@ class Move(Action):
         self.is_undo = undo
 
     def perform_on(self, game: board.Board):
-        if self.is_undo: print("")
         from_square = game[self.from_col][self.from_row]
         to_square = game[self.to_col][self.to_row]
 
@@ -267,8 +266,6 @@ class Move(Action):
         to_square.piece.en_passant = self.en_passant_vulnerable
     
     def unperform_on(self, game: board.Board):
-        print(f"Unperforming {self}")
-        print(f"undo: {self.is_undo}")
         self.has_been_unperformed = True
         self.opposite = Move(self.to_col, self.to_row, self.from_col, self.from_row, undo=True)
         self.opposite.perform_on(game)
@@ -284,22 +281,18 @@ class Move(Action):
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
         if from_square.piece == None:
-            print(f"{self} is illegal because it is from a square without a piece.")
             return True
-        color = from_square.piece.color
 
+        color = from_square.piece.color
+        
         try:
             self.perform_on(game)
         except:
             self.unperform_on(game)
             return True
-
+        
         result = is_check(color, game)
         self.unperform_on(game)
-        if result:
-            print(f"{self} is illegal")
-        else:
-            print(f"{self} is legal")
         return result
 
     def __str__(self) -> str:
