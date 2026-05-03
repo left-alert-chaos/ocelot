@@ -197,8 +197,9 @@ class Move(Action):
     Pretty self-explanatory.
     Undo is whether the move is being used to undo a different move.
 
-    ## perform_on(self, game: board.Board)
+    ## perform_on(self, game: board.Board, update: bool=True)
     Checks whether a piece is on from square. If there isn't, raises an exception. Else, moves the piece.
+    If update is True, updates threats.
 
     ## unperform_on(self, game: board.Board)
     Undo move and uncapture pieces. Only reliable if move has already been performed.
@@ -225,20 +226,22 @@ class Move(Action):
         self.has_been_unperformed = False
         self.is_undo = undo
 
-    def perform_on(self, game: board.Board):
+    def perform_on(self, game: board.Board, update: bool=True):
         from_square = game[self.from_col][self.from_row]
         to_square = game[self.to_col][self.to_row]
 
         if from_square.piece == None:
             raise MoveException(f"This move ({self}) is illegal and unplayable because it is from a square without a piece.")
+
+        #handle captures
         if to_square.piece != None:
             #record capture info
             self.capture_color = to_square.piece.color
             self.capture_type = to_square.piece.ptype
 
-            remove = game.pieces.count(to_square.piece)
-            for _ in range(remove):
-                game.pieces.remove(to_square.piece)
+            #remove duplicates and remove captured piece
+            game.pieces = list(set(game.pieces))
+            game.pieces.remove(to_square.piece)
 
         #actually move the piece
         to_square.piece = copy.deepcopy(from_square.piece)
@@ -255,28 +258,30 @@ class Move(Action):
         #en passant
         if self.en_passant_square_row != None and self.en_passant_square_col != None:
             square = game[self.en_passant_square_col][self.en_passant_square_row]
-            game.pieces.remove(square.piece)
-            square.piece = None
+            if square.piece != None:
+                game.pieces.remove(square.piece)
+                square.piece = None
 
         self.has_been_performed = True
 
         #update board because I'll forget to do it later
-        game.reset_en_passant()
-        update_threats(game)
-        to_square.piece.en_passant = self.en_passant_vulnerable
+        if update:
+            game.reset_en_passant()
+            update_threats(game)
+            to_square.piece.en_passant = self.en_passant_vulnerable
     
     def unperform_on(self, game: board.Board):
         self.has_been_unperformed = True
         self.opposite = Move(self.to_col, self.to_row, self.from_col, self.from_row, undo=True)
-        self.opposite.perform_on(game)
-        #print(f"game[self.to_col][self.to_row].piece: {game[self.to_col][self.to_row].piece}")
-        #print(f"game[self.from_col][self.from_row].piece: {game[self.from_col][self.from_row].piece}")
+        self.opposite.perform_on(game, False)
 
         #recreate captured piece
         if self.capture_color != None and self.capture_type != None:
             new_piece = board.Piece(self.capture_type, self.capture_color, game[self.to_col][self.to_row])
             game.pieces.append(new_piece)
             game[self.to_col][self.to_row].piece = new_piece
+
+        update_threats(game)
 
     def is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
@@ -350,6 +355,13 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     moves = []
     loc = piece.location
     backrank = 7 if direction == 1 else 0
+
+    #manually override has_moved
+    starting_rank = 1 if direction == 1 else 6
+    if loc.row != starting_rank: piece.has_moved = True
+
+    #check for end of board
+    if loc.row == backrank: return []
     
     #one square push
     if loc.row < 7 and game[loc.col][loc.row + direction].piece == None:
@@ -367,11 +379,16 @@ def pawn_moves(piece: board.Piece, game: board.Board) -> list[Move]:
     #diagonals
     col_num = LETTERS.index(loc.col)
     #left diagonal
-    if col_num > 0 and game[LETTERS[col_num - 1]][loc.row + direction].piece != None and game[LETTERS[col_num - 1]][loc.row + direction].piece.color != piece.color:
-        moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction))
-    #right diagonal
-    if col_num < 7 and game[LETTERS[col_num + 1]][loc.row + direction].piece != None and game[LETTERS[col_num + 1]][loc.row + direction].piece.color != piece.color:
-        moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction))
+    try:
+        if col_num > 0 and game[LETTERS[col_num - 1]][loc.row + direction].piece != None and game[LETTERS[col_num - 1]][loc.row + direction].piece.color != piece.color:
+            moves.append(Move(loc.col, loc.row, LETTERS[col_num - 1], loc.row + direction))
+        #right diagonal
+        if col_num < 7 and game[LETTERS[col_num + 1]][loc.row + direction].piece != None and game[LETTERS[col_num + 1]][loc.row + direction].piece.color != piece.color:
+            moves.append(Move(loc.col, loc.row, LETTERS[col_num + 1], loc.row + direction))
+    except:
+        print(f"Piece has moved: {piece.has_moved}")
+        print(f"Piece: {piece}")
+        raise
 
     #en passant
     if col_num > 0 and game[LETTERS[col_num - 1]][loc.row].piece != None:
@@ -650,6 +667,7 @@ def update_black_threats(game: board.Board):
 
 def is_check(color: board.PieceColor, game: board.Board) -> bool:
     pieces = game.white_pieces() if color == board.PieceColor.WHITE else game.black_pieces()
+    update_threats(game)
     enemy_threats = game.squares_black_threatens if color == board.PieceColor.WHITE else game.squares_white_threatens
     king = None
     for piece in pieces:

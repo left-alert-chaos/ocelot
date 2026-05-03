@@ -109,8 +109,10 @@ def run_all(directory: str="."):
     # Move to testing suite directory and make everything importable
     if not os.getcwd().endswith("testing"):
         os.chdir("testing")
+    directory = os.path.abspath(directory)
     os.chdir(directory)
-    print(f"Running test suite at {os.getcwd()}. (Also running files in nested dirs)")
+    sys.path.append(directory)
+    print(f"Running test suite at {directory}. (Also running files in nested dirs)")
 
     fail = False
     fails = 0

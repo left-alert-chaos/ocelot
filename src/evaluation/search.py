@@ -37,48 +37,31 @@ class SearchTree:
     # Methods
 
     ## __init__(self, game: physical.board.Board, color: physical.board.PieceColor, depth: int)
-    Initializes and populates the tree. This is very time complex and can take awhile.
+    Initializes the tree.
 
     ## try_best_position(self, position: SearchNode) -> bool
     Checks if value > current best value. If it is, best_position becomes position.
     Returns whether the new position was better or equal.
 
     ## best_move(self) -> movement.Move | movement.Castle | None
-    Traverses parents of best position until a depth 1 move is reached.
+    Populates the tree. This is very time complex and can take a while.
+    It finds the best position and returns the move leading to it.
+    A minimax algorithm is used with alpha-beta pruning.
     """
 
     def __init__(self, game: board.Board, color: board.PieceColor, depth: int):
         self.game = game
         self.color = color
         self.root = SearchNode(game, color, self, self)
-        self.best_value = 0.0
-        self.best_position = self.root
-
-        self.root.alphabeta(depth, float("-inf"), float("inf"), True)
-    
-    def try_best_position(self, position):
-        value = manual.non_predictive(position.game, self.color)
-        if value > self.best_value:
-            self.best_value = position.value
-            self.best_position = position
-            print("Set best position")
-
+        self.depth = depth
+ 
     def best_move(self) -> movement.Move | movement.Castle | None:
-        if self.best_position == self.root: return
-        position = self.best_position
+        self.root.alphabeta(self.depth, float("-inf"), float("inf"), True)
 
-        #iterate through parents until a top-level pos is found
-        while True:
-            if position in self.root.children:
-                break
-            position = position.parent
-
-        #find move that led to position
         for (move, local_pos) in self.root.move_results.items():
-            if local_pos is position:
-                return move
+            if local_pos.value == self.root.value: return move
         
-        print("couldn't find position's parent.")
+        print("Couldn't find position")
         return
 
 
@@ -127,7 +110,6 @@ class SearchNode:
     
     #brazenly stolen from https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning#Pseudocode
     def alphabeta(self, depth: int, alpha: float | int, beta: float | int, maximizing_player: bool) -> float:
-        self.tree.try_best_position(self)
         if depth == 0 or self.value == float("inf") or self.value == float("-inf"):
             #opposite if not maximizing to translate value to bot's understanding
             return self.value * (1 if maximizing_player else -1)
@@ -164,7 +146,8 @@ class SearchNode:
                 if value <= alpha:
                     break
                 beta = min(beta, value)
-                value *= -1
+            value *= -1
+        self.value = value
         return value
 
 

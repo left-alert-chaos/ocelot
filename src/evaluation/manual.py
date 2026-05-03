@@ -53,7 +53,6 @@ def all_manual(game: board.Board, turn: board.PieceColor) -> float:
 
 
 def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WHITE) -> float:
-    #end of game?
     white_moves = movement.white_legal_moves(game)
     black_moves = movement.black_legal_moves(game)
     opponent = board.PieceColor.BLACK if turn == board.PieceColor.WHITE else board.PieceColor.WHITE
@@ -73,10 +72,11 @@ def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WH
 
     #start with material
     score = white_total_piece_value(game) - black_total_piece_value(game)
-    score += all_manual(game, turn)
 
     if turn == board.PieceColor.BLACK:
         score *= -1
+
+    score += all_manual(game, turn)
 
     return score
 
@@ -106,7 +106,7 @@ def pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.Pi
 def check_knights_on_rim(game: board.Board, score: float):
     for square in game["a"] + game["h"]:
         if square.piece != None and square.piece.ptype == board.PieceType.KNIGHT:
-            score += 0.5 if square.piece.color == board.PieceColor.BLACK else -0.5
+            score += 5 if square.piece.color == board.PieceColor.WHITE else -5
 
 
 def pawns_in_center(game: board.Board, score: float):
@@ -115,7 +115,7 @@ def pawns_in_center(game: board.Board, score: float):
         if square.piece == None:
             return
         if square.piece.ptype == board.PieceType.PAWN:
-            score += 1 if square.piece.color == board.PieceColor.BLACK else -1
+            score += square.piece.color.value
 
     check_square(game["d"][3], score)
     check_square(game["d"][4], score)

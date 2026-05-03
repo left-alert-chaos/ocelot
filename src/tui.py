@@ -2,6 +2,7 @@
 A sample implementation that uses the bot class. More a low-effort, unstable tech demo than anything else."""
 
 from physical import board, movement
+from evaluation import non_predictive
 import bot
 import sys
 
@@ -69,6 +70,9 @@ while True:
     move_num += 1
     print(f"Move {move_num}")
     make_move()
+    game.clean()
     print(game)
     user_moves() 
+    game.clean()
+    print(f"Game eval: {non_predictive(game)}")
 
