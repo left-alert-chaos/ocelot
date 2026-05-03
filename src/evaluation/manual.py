@@ -106,7 +106,7 @@ def pieces_from_color(game: board.Board, ptype: board.PieceType, color: board.Pi
 def check_knights_on_rim(game: board.Board, score: float):
     for square in game["a"] + game["h"]:
         if square.piece != None and square.piece.ptype == board.PieceType.KNIGHT:
-            score += 5 if square.piece.color == board.PieceColor.WHITE else -5
+            score += square.piece.color.value
 
 
 def pawns_in_center(game: board.Board, score: float):
