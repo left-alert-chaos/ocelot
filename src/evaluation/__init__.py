@@ -44,7 +44,6 @@ def evaluate_move(move: movement.Move | movement.Castle, game: board.Board) -> f
     move.perform_on(test_game)
     after_score = non_predictive(test_game, opponent_color)
 
-    #flip score for black
     return after_score - before_score
 
 

@@ -1,4 +1,5 @@
-"""An ultra-simple testing framework, because I didn't want to learn a real one for this project.
+"""# testlib
+An ultra-simple testing framework, because I didn't want to learn a real one for this project.
 When run on its own, it calls run_all() and reports on each file.
 If a command-line argument is provided, it is passed as an argument to run_all().
 
@@ -8,10 +9,10 @@ Any other code is the number of tests that failed.
 
 # Functions
 
-## test_function(func: types.FunctionType, expected_result, name: str="") -> bool
+## test_function(func: types.FunctionType | types.MethodType, expected_result, name: str="") -> bool
 Why is everything so self-explanatory?
 
-## register_function_test(func: types.FunctionType, expected_result, name: str="")
+## register_function_test(func: types.FunctionType | types.MethodType, expected_result, name: str="")
 Call this to register a test. Registered tests are run when testlib finds a test file in the testing/ directory.
 
 ## bool_assertion(assertion: bool, name: str="") -> bool
@@ -19,6 +20,12 @@ Checks whether assertion is True. Returns assertion.
 
 ## register_bool_assertion(assertion: bool, name: str="")
 Call this to register an assertion. Registered assertions and tests are run when testlib finds a test file in the testing/ directory.
+
+## speed_test(func: types.FunctionType | types.MethodType, max_time: float, name: str) -> bool
+Runs function and returns whether time was <= max_time
+
+## register_speed_test(func: types.FunctionType | types.MethodType, max_time: float, name: str)
+Call this to register a speed test. Registered tests are run when testlib finds this file while running all test files.
 
 ## run_all(directory=".")
 Runs all python files in testing/. directory.
@@ -34,8 +41,10 @@ import sys
 sys.path.append(os.path.dirname(__file__) + "/..")
 sys.path.append(os.path.dirname(__file__) + "/.." + "/src")
 import types
+import time
 
 tests: list[types.FunctionType] = []
+test_hashes: list[int] = []
 SKIP = ("testlib.py", "__pycache__", "all.sh", "__cache__", "pyc")
 num_of_tests = 0
 
@@ -62,7 +71,7 @@ def test_function(func: types.FunctionType | types.MethodType, expected_result, 
     return not fail
 
 
-def register_function_test(func: types.FunctionType, expected_result, name: str=""):
+def register_function_test(func: types.FunctionType | types.MethodType, expected_result, name: str=""):
     tests.append(lambda: test_function(func, expected_result, name))
 
 
@@ -79,12 +88,31 @@ def register_bool_assertion(assertion: bool, name: str=""):
     tests.append(lambda: bool_assertion(assertion, name))
 
 
+def speed_test(func: types.FunctionType | types.MethodType, max_time: float, name: str) -> bool:
+    start = time.time()
+    func()
+    #find delta and return pass
+    end = time.time()
+    delta = end - start
+    if delta <= max_time:
+        print(f"Speed test '{name}' passed ({delta} <= {max_time})")
+        return True
+    else:
+        print(f"Speed test '{name}' failed ({delta} > {max_time})")
+        return False
+
+def register_speed_test(func: types.FunctionType | types.MethodType, max_time: float, name: str):
+    tests.append(lambda: speed_test(func, max_time, name))
+
+
 def run_all(directory: str="."):
     # Move to testing suite directory and make everything importable
     if not os.getcwd().endswith("testing"):
         os.chdir("testing")
+    directory = os.path.abspath(directory)
     os.chdir(directory)
-    print(f"Running test suite at {os.getcwd()}. (Also running files in nested dirs)")
+    sys.path.append(directory)
+    print(f"Running test suite at {directory}. (Also running files in nested dirs)")
 
     fail = False
     fails = 0
@@ -102,7 +130,9 @@ def run_all(directory: str="."):
             sys.path.append(item)
             for sub in os.listdir(item): queue.append(f"{item}/{sub}")
     
-    print(queue)
+    queue = list(set(queue))
+    fail = False
+    print(f"Tests file queue: {queue}")
     for test in queue:
         if test.endswith(SKIP):
             continue
@@ -114,7 +144,7 @@ def run_all(directory: str="."):
         print(f"\n\nRunning file {test}")
         result = run_file(test)
         fails += result
-        fail = True if result > 0 else False
+        fail = True if result > 0 else fail
 
     print(f"\n\nAll tests complete ({num_of_tests}).")
     if not fail:
@@ -129,6 +159,7 @@ def run_all(directory: str="."):
 #returns true if all pass
 def run_file(fname: str) -> int:
     global num_of_tests
+    global test_hashes
 
     try:
         # delete file extension and replace / with . for module naming
@@ -140,10 +171,15 @@ def run_file(fname: str) -> int:
     fails = 0
 
     for test in tests:
+        #duplicate
+        test_hash = hash(test)
+        if test_hash in test_hashes:
+            continue
+        test_hashes.append(test_hash)
+
         num_of_tests += 1
         if not test():
             fails += 1
-        num_of_tests += 1
     print(f"Done running file {fname}. Fails: {fails}")
     return fails
 

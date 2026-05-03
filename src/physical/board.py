@@ -27,6 +27,11 @@ The board itself. Holds columns, rows, and sets up starting position by default.
 """
 from enum import Enum
 import copy
+import time
+import types
+
+#used to track how long duplication has taken
+elapsed_duplication = 0.0
 
 
 class Square:
@@ -67,19 +72,30 @@ class Square:
         return hash(str(self))
 
     def draw(self) -> str:
-        filler = "bb" if self.color == PieceColor.BLACK else "ww"
-        piece_repr = "  " if self.piece == None else self.piece.two_letter()
-
-        return f"{filler}{piece_repr}{filler}"
+        bg = "\033[40m" if self.color == PieceColor.BLACK else "\033[47m"
+        fg = "\033[0;37m" if self.color == PieceColor.BLACK else "\033[30m"
+        piece = "  " if self.piece == None else self.piece.two_letter()
+        return f"{bg}{fg}{piece}\033[0m"
 
 
 def col_row(square: Square) -> tuple[str, int]:
     return (square.col, square.row)
 
 
+#a simple timer to track how long duplication takes
+def duplication_clock(func: types.FunctionType | types.MethodType) -> types.FunctionType | types.MethodType:
+    def timer(self):
+        global elapsed_duplication
+        start = time.time()
+        result = func(self)
+        elapsed_duplication += time.time() - start
+        return result
+    return timer
+
+
 class PieceColor(Enum):
     """Enum representing colors. BLACK is 0 and WHITE is 1. Also represents board square colors."""
-    BLACK = 0
+    BLACK = -1
     WHITE = 1
 
 
@@ -142,6 +158,10 @@ class Piece:
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
+    def __hash__(self) -> int:
+        #laziness
+        return hash(str(self))
+
     def two_letter(self) -> str:
         #                                                knights should be represented with n instead of k
         return f"{self.color.name[0]}{self.ptype.name[0] if self.ptype.name != 'KNIGHT' else 'N'}"
@@ -161,6 +181,15 @@ class Board:
 
     ## squares_black_threatens: list[Square]
     All squares on the board that can be moved to by black.
+
+    ## pieces: list[Piece]
+    All pieces on the board.
+
+    ## white_castled: bool=False
+    Has white castled?
+
+    ## black_castled: bool=False
+    Has black castled?
     
     # Methods
 
@@ -191,6 +220,10 @@ class Board:
     ## duplicate(self) -> Board
     Creates a new board identical to this one.
 
+    ## clean(self)
+    Similar logic to .duplicate(), but only acting on self and not producing a new board.
+    Essentially the same as game = game.duplicate(), but acting on the object and without as much memory overhead.
+
     ## draw(self) -> str
     Draws an ascii representation of the board. The default for __str__ and __repr__.
     """
@@ -202,6 +235,7 @@ class Board:
         self.threatened_squares = []
         self.squares_white_threatens = []
         self.squares_black_threatens = []
+        self.white_castled, self.black_castled = False, False
         for col in "abcdefgh":
             col_list = []
             for row in range(8):
@@ -223,7 +257,7 @@ class Board:
         return self.draw()
 
     def __eq__(self, other) -> bool:
-        for col_name in "abcdefgh":
+        for col_name in LETTERS:
             for row in range(8):
                 if self[col_name][row] != other[col_name][row]: return False
         return True
@@ -265,6 +299,8 @@ class Board:
         for piece in self.pieces:
             piece.en_passant = False
     
+    #creates new identical board in O(ignorance is bliss) time.
+    @duplication_clock
     def duplicate(self):
         new = Board(False)
 
@@ -281,8 +317,20 @@ class Board:
                 new[col][row].piece = new_piece
         return new
 
+    #considered duplication because the algorithm is almost identical
+    @duplication_clock
+    def clean(self):
+        #erase ghosts not on board.
+        self.pieces = []
+        
+        #iterate over cols and rows to find pieces
+        for col in LETTERS:
+            for row in range(8):
+                piece = self[col][row].piece
+                if piece != None: self.pieces.append(piece)
+
     def draw(self) -> str:
-        output = ""
+        output = "      a    b    c    d    e    f    g    h"
         #all row values, top to bottom
         for row in range(7, -1, -1):
             output += f"\n\n{row + 1}"

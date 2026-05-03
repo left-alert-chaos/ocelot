@@ -45,7 +45,7 @@ class Sophisticate:
     Returns a scored random move. best_move()'s fallback if the search doesn't turn anything up.
     """
 
-    def __init__(self, game: board.Board, color: board.PieceColor, depth: int=4):
+    def __init__(self, game: board.Board, color: board.PieceColor, depth: int=3):
         self.game = game
         self.color = color
         self.depth = depth
@@ -54,8 +54,8 @@ class Sophisticate:
         start = time.time()
         tree = evaluation.search.SearchTree(self.game, self.color, self.depth)
         deep_result = tree.best_move()
+        print(f"Elapsed dupe time: {board.elapsed_duplication}")
         if deep_result != None:
-            print(f"Deep result value: {tree.best_value}")
             print(f"Found move in {time.time() - start} seconds.")
             return deep_result
 
@@ -65,7 +65,7 @@ class Sophisticate:
     def random_best_move(self) -> movement.Move | movement.Castle:
         moves = movement.black_legal_moves(self.game) if self.color == board.PieceColor.BLACK else movement.white_legal_moves(self.game)
 
-        #if this isn't suffled, it always plays the same game given tieing moves.
+        #if this isn't shuffled, it always plays the same game given tying moves.
         random.shuffle(moves)
         if len(moves) == 0:
             if movement.is_check(self.color, self.game):
@@ -76,6 +76,7 @@ class Sophisticate:
         best_move = moves[0]
         for move in moves:
             move.value = evaluation.evaluate_move(move, self.game)
+            if self.color == board.PieceColor.BLACK: move.value *= -1
             if move.value >= best_move.value:
                 best_move = move
         return best_move
