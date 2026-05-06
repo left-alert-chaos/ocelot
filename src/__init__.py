@@ -9,11 +9,6 @@ Holds anything having to do with the board or positioning. Moves, Pieces, Piece 
 What one could call the actual engine.
 Not implemented yet."""
 
-# allow importing
-import os
-import sys
-sys.path.append(os.path.dirname(__file__))
-
 import physical
 import evaluation
 

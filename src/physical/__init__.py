@@ -10,11 +10,6 @@ Holds Board() class and Piece() class and piece types
 Holds Move() and Castle() types and calculates legal moves.
 """
 
-#allow files to be imported
-import os
-import sys
-sys.path.append(os.path.dirname(__file__))
-
 import board
 import movement
 

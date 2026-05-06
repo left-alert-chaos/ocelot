@@ -17,11 +17,6 @@ An exception raised if the bot loses.
 ## StalemateException(GameException)
 An exception raised if no legal moves could be found but there isn't check."""
 
-import os
-import sys
-dirname = os.path.dirname(__file__)
-if dirname not in sys.path:
-    sys.path.append(dirname)
 from physical import movement, board
 import evaluation
 import random
