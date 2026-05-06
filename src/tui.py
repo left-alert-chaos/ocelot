@@ -70,9 +70,7 @@ while True:
     move_num += 1
     print(f"Move {move_num}")
     make_move()
-    game.clean()
     print(game)
     user_moves() 
-    game.clean()
     print(f"Game eval: {non_predictive(game)}")
 

@@ -155,8 +155,7 @@ class Castle(Action):
 
 
     def is_illegal(self, game: board.Board) -> bool:
-        if is_check(self.color, game):
-            return True
+        if is_check(self.color, game): return True
 
         rook_col = "h" if self.side == CastleSide.KING else "a"
         backrank = 0 if self.color == board.PieceColor.WHITE else 7
@@ -204,8 +203,17 @@ class Move(Action):
     ## unperform_on(self, game: board.Board)
     Undo move and uncapture pieces. Only reliable if move has already been performed.
 
-    ## is_illegal(self, game: board.Board)
+    ## new_is_illegal(self, game: board.Board)
+    A new algo for is_illegal that is still being debugged and frequently gives false negatives.
+    It is, however, much more efficient than old_is_illegal, because it uses undo instead of duplication.
+
+    ## old_is_illegal(self, game: board.Board)
+    Old, battle-tested, slow algo for is_illegal.
+    Being phased out, but is 100% reliable, unlike new_is_illegal().
+
+    ## is_illegal(self, game: board.Board, new: bool=False)
     Checks for illegal move (moving pinned piece, etc) and returns True if illegal is False if legal.
+    Currently a wrapper for old_is_illegal() or new_is_illegal()
     """
 
     def __init__(self, from_col: str, from_row: int, to_col: str, to_row: int, value: float=0.0, promotion_type: board.PieceType|None = None, en_passant_vulnerable: bool=False, en_passant_square_row: int|None=None, en_passant_square_col: str|None=None, undo: bool=False):
@@ -244,11 +252,9 @@ class Move(Action):
             game.pieces.remove(to_square.piece)
 
         #actually move the piece
-        to_square.piece = copy.deepcopy(from_square.piece)
-        game.pieces.append(to_square.piece)
+        to_square.piece = from_square.piece
         to_square.piece.has_moved = True
         to_square.piece.location = to_square
-        game.pieces.remove(from_square.piece)
         from_square.piece = None
 
         #check for promotion
@@ -282,8 +288,18 @@ class Move(Action):
             game[self.to_col][self.to_row].piece = new_piece
 
         update_threats(game)
+    
+    def old_is_illegal(self, game: board.Board) -> bool:
+        from_square = game[self.from_col][self.from_row]
+        
+        local_board = game.duplicate()
+        try:
+            self.perform_on(local_board)
+        except:
+            return True
+        return is_check(from_square.piece.color, local_board)
 
-    def is_illegal(self, game: board.Board) -> bool:
+    def new_is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
         if from_square.piece == None:
             return True
@@ -298,7 +314,15 @@ class Move(Action):
         
         result = is_check(color, game)
         self.unperform_on(game)
+        
+        if result: print(f"Move.new_is_illegal(): returning True")
         return result
+    
+    def is_illegal(self, game: board.Board, new: bool=False) -> bool:
+        if new:
+            return self.new_is_illegal(game)
+        else:
+            return self.old_is_illegal(game)
 
     def __str__(self) -> str:
         string = f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"
@@ -666,19 +690,24 @@ def update_black_threats(game: board.Board):
 
 
 def is_check(color: board.PieceColor, game: board.Board) -> bool:
-    pieces = game.white_pieces() if color == board.PieceColor.WHITE else game.black_pieces()
     update_threats(game)
     enemy_threats = game.squares_black_threatens if color == board.PieceColor.WHITE else game.squares_white_threatens
+
+    #Search for king in O(n) time - horrendous, I know
     king = None
-    for piece in pieces:
+    for piece in game.pieces:
         if piece.ptype == board.PieceType.KING:
             king = piece
             break
+
     if king == None:
         print(f"WARNING: Not check because there is no {color.name} king!")
         return False
 
-    return king.location in enemy_threats
+    for loc in enemy_threats:
+        if loc == king.location:
+            return True
+    return False
 
         
 class PieceException(Exception):

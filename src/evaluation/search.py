@@ -28,9 +28,6 @@ class SearchTree:
     ## color: physical.board.PieceColor
     The person whose turn it is.
 
-    ## best_position: physical.board.Board
-    The best found position after given depth.
-
     ## best_value: float
     The best found value after given depth.
 
@@ -54,14 +51,16 @@ class SearchTree:
         self.color = color
         self.root = SearchNode(game, color, self, self)
         self.depth = depth
+        self.best_value = 0.0
  
     def best_move(self) -> movement.Move | movement.Castle | None:
         self.root.alphabeta(self.depth, float("-inf"), float("inf"), True)
+        self.best_value = self.root.value
 
         for (move, local_pos) in self.root.move_results.items():
             if local_pos.value == self.root.value: return move
         
-        print("Couldn't find position")
+        print("SearchTree.best_move(): Couldn't find position; returning None")
         return
 
 
@@ -104,14 +103,14 @@ class SearchNode:
         self.game = game
         self.children = []
         self.move_results = {}
-        self.value = manual.non_predictive(game, color)
+        self.value = manual.non_predictive(game, color) * -1
         self.tree = tree
         self.parent = parent
     
     #brazenly stolen from https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning#Pseudocode
     def alphabeta(self, depth: int, alpha: float | int, beta: float | int, maximizing_player: bool) -> float:
+        #end of game or tree
         if depth == 0 or self.value == float("inf") or self.value == float("-inf"):
-            #opposite if not maximizing to translate value to bot's understanding
             return self.value * (1 if maximizing_player else -1)
 
         moves = movement.white_legal_moves(self.game) if self.color == board.PieceColor.WHITE else movement.black_legal_moves(self.game)
@@ -146,7 +145,8 @@ class SearchNode:
                 if value <= alpha:
                     break
                 beta = min(beta, value)
-            value *= -1
+            #Not sure if this mattered, so I'll keep it commented out
+            #value *= -1
         self.value = value
         return value
 
