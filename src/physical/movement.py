@@ -54,12 +54,26 @@ Finds all white moves.
 
 import board
 import copy
+from typing import Protocol
 from enum import Enum
 
 
-class Action:
-    """Empty class representing any kind of action on the board. All move and action types inherit from Action."""
-    pass
+class Action(Protocol):
+    """# Action(Protocol)
+    A Protocol for things that can be performed and legality checked.
+
+    # Methods
+
+    ## perform_on(self, physical.board.Board)
+    Do the action.
+
+    ## is_illegal(self, physical.board.Board) -> bool
+    Checks for legality."""
+    def perform_on(self, game: board.Board):
+        raise NotImplementedError
+
+    def is_illegal(self, game: board.Board) -> bool:
+        raise NotImplementedError
 
 
 class CastleSide(Enum):
@@ -83,7 +97,10 @@ class Castle(Action):
     Initializes. The color argument represents the player that is castling.
 
     ## perform_on(self, game: board.Board)
-    Castles on the given board. Does *NOT* check for legality, but does check for whether king and rooks have moved."""
+    Castles on the given board. Does *NOT* check for legality, but does check for whether king and rooks have moved.
+
+    ## is_illegal(self, game: board.Board) -> bool
+    Finds legality of castling."""
     def __init__(self, side: CastleSide, color: board.PieceColor):
         super().__init__()
         self.side = side
@@ -291,6 +308,9 @@ class Move(Action):
     
     def old_is_illegal(self, game: board.Board) -> bool:
         from_square = game[self.from_col][self.from_row]
+
+        if from_square.piece == None:
+            raise MoveException(f"Legality can't be determined because move {self} is from a square with no piece")
         
         local_board = game.duplicate()
         try:
