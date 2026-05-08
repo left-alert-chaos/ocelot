@@ -28,9 +28,11 @@ How many piece points white has.
 ## black_total_piece_value(game: physical.board.Board) -> int
 How many piece points black has.
 
-## non_predictive(game: physical.board.Board, turn: physical.board.PieceColor) -> float
+## non_predictive(game: physical.board.Board, turn: physical.board.PieceColor, fuzz: bool=False) -> float
 Returns a float of current tempo/who's winning (positive for white, negative for black).
 turn represents whose move it is.
+If fuzz is True, a random float from -0.1 to 0.1 is added to the result.
+This makes the engine play a different game every time.
 
 # Classes
 
@@ -39,6 +41,7 @@ Exception raised when the player whose turn it is has no legal moves.
 """
 
 from physical import board, movement
+import time
 
 
 def all_manual(game: board.Board, turn: board.PieceColor) -> float:
@@ -52,7 +55,7 @@ def all_manual(game: board.Board, turn: board.PieceColor) -> float:
     return score
 
 
-def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WHITE) -> float:
+def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WHITE, fuzz: bool=False) -> float:
     white_moves = movement.white_legal_moves(game)
     black_moves = movement.black_legal_moves(game)
     opponent = board.PieceColor.BLACK if turn == board.PieceColor.WHITE else board.PieceColor.WHITE
@@ -77,6 +80,13 @@ def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WH
         score *= -1
 
     score += all_manual(game, turn)
+
+    #otherwise, the engine plays the same game every time.
+    if fuzz:
+        #simple randomness -- get the last digit of time
+        #amount = int(str(time.time())[-1]) * 2
+        #score += amount / 100
+        pass
 
     return score
 

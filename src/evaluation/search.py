@@ -53,7 +53,7 @@ class SearchTree:
         self.depth = depth
         self.best_value = 0.0
  
-    def best_move(self) -> movement.Move | movement.Castle | None:
+    def best_move(self) -> movement.Action | None:
         self.root.alphabeta(self.depth, float("-inf"), float("inf"), True)
         self.best_value = self.root.value
 
@@ -103,7 +103,7 @@ class SearchNode:
         self.game = game
         self.children = []
         self.move_results = {}
-        self.value = manual.non_predictive(game, color) * -1
+        self.value = manual.non_predictive(game, color, fuzz=True) * -1
         self.tree = tree
         self.parent = parent
     
@@ -123,6 +123,7 @@ class SearchNode:
                 move.perform_on(temp_game)
                 child = SearchNode(temp_game, self.opponent_color, self.tree, self)
                 self.children.append(child)
+                move.value = child.value
                 self.move_results[move] = child
 
                 #pruning
