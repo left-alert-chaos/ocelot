@@ -68,11 +68,17 @@ class Action(Protocol):
     Do the action.
 
     ## is_illegal(self, physical.board.Board) -> bool
-    Checks for legality."""
+    Checks for legality.
+
+    ## uci(self) -> str
+    UCI representation of the action."""
     def perform_on(self, game: board.Board):
         raise NotImplementedError
 
     def is_illegal(self, game: board.Board) -> bool:
+        raise NotImplementedError
+
+    def uci(self) -> str:
         raise NotImplementedError
 
 
@@ -193,6 +199,11 @@ class Castle(Action):
         else:
             return not (game["b"][backrank].piece == None and game["c"][backrank].piece == None and game["d"][backrank].piece == None)
 
+    def uci(self) -> str:
+        rank = 1 if self.color == board.PieceColor.WHITE else 8
+        col = "g" if self.side == CastleSide.KING else "c"
+
+        return f"e{rank}{col}{rank}"
 
     def __str__(self) -> str:
         return f"{self.color.name} castles {self.side.name}side."
@@ -343,6 +354,9 @@ class Move(Action):
             return self.new_is_illegal(game)
         else:
             return self.old_is_illegal(game)
+
+    def uci(self) -> str:
+        return f"{self.from_col}{self.from_row + 1}{self.to_col}{self.to_row + 1}"
 
     def __str__(self) -> str:
         string = f"Move from {self.from_col}{self.from_row} to {self.to_col}{self.to_row} (standard: {self.from_col}{self.from_row + 1} -> {self.to_col}{self.to_row + 1}); value: {self.value}"

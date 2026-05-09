@@ -1,9 +1,6 @@
-"""A module containing clean APIs that abstract away all other messiness. Just a bot that plays chess.
-
-# Modules
-
-## uci
-A module providing an implementation of the UCI standard.
+"""# robot
+A module holding the Sophisticate engine class and error types.
+It also holds a lot of things imported to the `bot` module's top level, like the engine class.
 
 # Classes
 
@@ -20,19 +17,14 @@ An exception raised if the bot wins.
 An exception raised if the bot loses.
 
 ## StalemateException(GameException)
-An exception raised if no legal moves could be found but there isn't check."""
+An exception raised if no legal moves could be found but there isn't check.
+"""
 
-import os
-import sys
-dirname = os.path.dirname(__file__)
-if dirname not in sys.path:
-    sys.path.append(dirname)
-from physical import movement, board
-import uci
-import robot
 import evaluation
 import random
 import time
+from physical import movement, board
+import uci
 
 
 class Sophisticate:
@@ -45,7 +37,7 @@ class Sophisticate:
     ## __init__(self, game: physical.board.Board, color: physical.board.PieceColor, depth: int=4)
     Initializes the bot to find the best moves for the given side.
 
-    ## best_move(self, watch: bool=False) -> physical.movement.Move
+    ## best_move(self, watch: bool=False, verbose: bool=False) -> physical.movement.Move
     (hopefully) finds the best legal move for the bot's color. It does NOT play the move, only returning it.
     Uses evaluation.search module, with depth from initialization.
 
@@ -53,7 +45,7 @@ class Sophisticate:
     Returns a scored random move. best_move()'s fallback if the search doesn't turn anything up.
 
     ## uciloop(self)
-    Runs an indefinite loop taking UCI input from stdin and outputting chosen moves to stdout.
+    Runs an indefinite loop taking UCI input from stdin and outputting chosen moves and standard responses to stdout.
     """
 
     def __init__(self, game: board.Board, color: board.PieceColor, depth: int=3):
@@ -61,16 +53,16 @@ class Sophisticate:
         self.color = color
         self.depth = depth
 
-    def best_move(self) -> movement.Action:
+    def best_move(self, verbose: bool=False) -> movement.Action:
         start = time.time()
         tree = evaluation.search.SearchTree(self.game, self.color, self.depth)
         deep_result = tree.best_move()
-        print(f"Elapsed dupe time: {board.elapsed_duplication}")
+        if verbose: print(f"Elapsed dupe time: {board.elapsed_duplication}")
         if deep_result != None:
-            print(f"Found move in {time.time() - start} seconds.")
+            if verbose: print(f"Found move in {time.time() - start} seconds.")
             return deep_result
 
-        print("Sophisticate.best_move(): reverting to random_best_move()")
+        if verbose: print("Sophisticate.best_move(): reverting to random_best_move()")
         return self.random_best_move()
 
     def random_best_move(self) -> movement.Move | movement.Castle:
@@ -91,6 +83,12 @@ class Sophisticate:
             if move.value >= best_move.value:
                 best_move = move
         return best_move
+
+    def uciloop(self):
+        while True:
+            command = input()
+            if not uci.run_command(command, self):
+                break
 
 
 class GameException(Exception):
