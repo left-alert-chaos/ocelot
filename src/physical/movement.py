@@ -54,7 +54,7 @@ Finds all white moves.
 
 import board
 import copy
-from enum import Enum
+from custom_enum import EnumMember
 
 
 class Action:
@@ -62,7 +62,7 @@ class Action:
     pass
 
 
-class CastleSide(Enum):
+class CastleSide:
     """Enum representing sides to castle to.
 
     # Values
@@ -70,8 +70,8 @@ class CastleSide(Enum):
     QUEEN = 1
     KING = 0"""
 
-    QUEEN = 1
-    KING = 0
+    QUEEN = EnumMember("QUEEN", 1)
+    KING = EnumMember("KING", 0)
 
 
 class Castle(Action):

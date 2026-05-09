@@ -25,10 +25,9 @@ A piece on the board, holding color, type, and location.
 ## Board
 The board itself. Holds columns, rows, and sets up starting position by default.
 """
-from enum import Enum
+from custom_enum import EnumMember
 import copy
 import time
-import types
 
 #used to track how long duplication has taken
 elapsed_duplication = 0.0
@@ -83,7 +82,7 @@ def col_row(square: Square) -> tuple[str, int]:
 
 
 #a simple timer to track how long duplication takes
-def duplication_clock(func: types.FunctionType | types.MethodType) -> types.FunctionType | types.MethodType:
+def duplication_clock(func):
     def timer(self):
         global elapsed_duplication
         start = time.time()
@@ -93,13 +92,21 @@ def duplication_clock(func: types.FunctionType | types.MethodType) -> types.Func
     return timer
 
 
-class PieceColor(Enum):
-    """Enum representing colors. BLACK is 0 and WHITE is 1. Also represents board square colors."""
+#EnumMember is a custom class to handle variants because Codon can't use the standard enum module
+class PieceColor:
+    """# PieceColor
+    Enum for color of pieces.
+
+    # Values
+
     BLACK = -1
     WHITE = 1
+    """
 
+    BLACK = EnumMember("BLACK", -1)
+    WHITE = EnumMember("WHITE", 1)
 
-class PieceType(Enum):
+class PieceType:
     """Enum representing types (Bishop, Queen, King, etc).
 
     # Values
@@ -111,12 +118,13 @@ class PieceType(Enum):
     QUEEN = 9
     KING = 39 because all other  together are 39 and the king is worth the game.
     """
-    PAWN = 1
-    KNIGHT = 3
-    BISHOP = 4
-    ROOK = 5
-    QUEEN = 9
-    KING = 39
+
+    PAWN = EnumMember("PAWN", 1)
+    KNIGHT = EnumMember("KNIGHT", 3)
+    BISHOP = EnumMember("BISHOP", 4)
+    ROOK = EnumMember("ROOK", 5)
+    QUEEN = EnumMember("QUEEN", 9)
+    KING = EnumMember("KING", 39)
 
 
 class Piece:

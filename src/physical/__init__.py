@@ -12,4 +12,4 @@ Holds Move() and Castle() types and calculates legal moves.
 
 import board
 import movement
-
+import custom_enum
