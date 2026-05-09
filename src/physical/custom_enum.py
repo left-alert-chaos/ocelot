@@ -6,44 +6,19 @@ It's basically just a fancy dict parser, but it was necessary.
 
 ## Enum[T]
 The whole reason we're here.
+Can be used identically to std Enum.
 
 ## EnumMember[T]
 A variant of the enum with a value and a name.
 """
 
 
-class EnumMember[T]:
-    name: str
-    value: T
-    """# EnumMember[T]
-    A class holding a name and value field, used as each variant of the Enum.
-
-    # Attributes
-
-    ## name: str
-    The name of the variant.
-
-    ## value: T
-    The value of the variant.
-
-    # Methods
-
-    ## __init__(self, name: str, value: T)
-    Initializes member.
-    """
-
+class Enum[T]:
     def __init__(self, name: str, value: T):
         self.name = name
         self.value = value
 
+    def __init_subclass__(cls):
+        for (name, value) in cls.__dict__.items():
+            cls.__dict__[name] = cls(name, value)
 
-class Enum[T]:
-    """# Enum
-    Enherit to create an Enum.
-    Any attribute that doesn't start with `__` becomes an EnumMember.
-    """
-    
-    def __init__(self, values: dict[str, T]):
-        for (name, value) in values.items():
-            self.__setattr__(name, EnumMember(name, value))
-    

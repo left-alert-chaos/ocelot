@@ -19,15 +19,24 @@ Enum for color of a player's pieces. Also used in other parts of the engine to d
 ## PieceType
 Enum for type of pieces, including value.
 
-## Piece
+## Entity(typing.Protocol)
+Only available in the `codon` branch of Sophisticate.
+A protocol representing a piece on the board or lack thereof.
+
+## NoPiece(Entity)
+Only available in the `codon` branch of Sophisticate.
+A little controdictory, but used instead of None on squares with no piece.
+
+## Piece(Entity)
 A piece on the board, holding color, type, and location.
 
 ## Board
 The board itself. Holds columns, rows, and sets up starting position by default.
 """
-from custom_enum import EnumMember
+from custom_enum import EnumMember, Enum
 import copy
 import time
+import typing
 
 #used to track how long duplication has taken
 elapsed_duplication = 0.0
@@ -92,8 +101,7 @@ def duplication_clock(func):
     return timer
 
 
-#EnumMember is a custom class to handle variants because Codon can't use the standard enum module
-class PieceColor:
+class PieceColor(Enum):
     """# PieceColor
     Enum for color of pieces.
 
@@ -102,11 +110,11 @@ class PieceColor:
     BLACK = -1
     WHITE = 1
     """
+    BLACK = -1
+    WHITE = 1
 
-    BLACK = EnumMember("BLACK", -1)
-    WHITE = EnumMember("WHITE", 1)
 
-class PieceType:
+class PieceType(Enum):
     """Enum representing types (Bishop, Queen, King, etc).
 
     # Values
@@ -119,15 +127,45 @@ class PieceType:
     KING = 39 because all other  together are 39 and the king is worth the game.
     """
 
-    PAWN = EnumMember("PAWN", 1)
-    KNIGHT = EnumMember("KNIGHT", 3)
-    BISHOP = EnumMember("BISHOP", 4)
-    ROOK = EnumMember("ROOK", 5)
-    QUEEN = EnumMember("QUEEN", 9)
-    KING = EnumMember("KING", 39)
+    NONE = 0
+    PAWN = 1
+    KNIGHT = 3
+    BISHOP = 4
+    ROOK = 5
+    QUEEN = 9
+    KING = 39
 
 
-class Piece:
+class Entity(typing.Protocol):
+    """# Entity(typing.Protocol)
+    A Protocol for a piece or lack thereof.
+
+    # Methods
+
+    ## __eq__(self, other), __ne__(self, other)
+    Python dunder methods that must be implemented by the enheriting type.
+    """
+
+    def __eq__(self, other) -> bool:
+        raise NotImplementedError
+
+    def __ne__(self, other) -> bool:
+        raise NotImplementedError
+
+
+class NoPiece(Entity):
+    """# NoPiece(Entity)
+    A type used instead of Piece when there is no piece on a given square. Equivalent to None.
+    No custom methods or attributes other than __eq__() and __ne__()
+    """
+    
+    def __eq__(self, other) -> bool:
+        return other == None or other is None
+
+    def __ne__(self, other) -> bool:
+        return not self == other
+
+class Piece(Entity):
     """Class representing a on the 
 
     # Methods
@@ -146,7 +184,7 @@ class Piece:
     en_passant: bool=False - Whether the piece can be captured with en passant.
     """
     
-    def __init__(self, ptype: PieceType, color: PieceColor, location: Square):
+    def __init__(self, ptype: EnumMember, color: PieceColor, location: Square):
         self.ptype = ptype
         self.color = color
         self.location = location
