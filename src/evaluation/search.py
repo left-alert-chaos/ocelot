@@ -103,7 +103,7 @@ class SearchNode:
         self.game = game
         self.children = []
         self.move_results = {}
-        self.value = manual.non_predictive(game, color, fuzz=True) * -1
+        self.value = manual.non_predictive(game, color)
         self.tree = tree
         self.parent = parent
     
