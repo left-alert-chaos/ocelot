@@ -19,7 +19,7 @@ def make_move():
     if movement.is_check(board.PieceColor.WHITE, game):
         print("I'm in check!!!")
     
-    move = robot.best_move(verbose=True)
+    move = robot.best_move()
     move.perform_on(game)
     print(move)
 

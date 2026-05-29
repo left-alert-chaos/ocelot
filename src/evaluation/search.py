@@ -52,15 +52,28 @@ class SearchTree:
         self.positions = 0
         self.root = SearchNode(game, color, self, self)
         self.depth = depth
-        self.best_value = 0.0
  
     def best_move(self) -> movement.Action | None:
         self.root.alphabeta(self.depth, float("-inf"), float("inf"), True)
-        self.best_value = self.root.value
 
-        for (move, local_pos) in self.root.move_results.items():
-            if local_pos.value == self.root.value: return move
-        
+        if len(self.root.children) == 0:
+            print("SearchTree.best_move(): self.root.children's len is 0")
+            return
+
+        #play favorites as a placeholder, haha
+        best_move = None
+        best_value = self.root.children[0].value
+
+        for (move, position) in self.root.move_results.items():
+            if best_move == None:
+                best_move = move
+                continue
+            if position.value >= best_value:
+                best_value = position.value
+                best_move = move
+            
+        if best_move != None: return best_move
+
         print("SearchTree.best_move(): Couldn't find position; returning None")
         return
 

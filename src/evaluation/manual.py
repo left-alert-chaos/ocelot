@@ -67,11 +67,6 @@ def non_predictive(game: board.Board, turn: board.PieceColor=board.PieceColor.WH
             return float("-inf")
         else:
             return 0.0
-    elif len(opponent_moves) == 0:
-        if movement.is_check(opponent, game):
-            return float("inf")
-        else:
-            return 0.0
 
     #start with material
     score = white_total_piece_value(game) - black_total_piece_value(game)
