@@ -25,7 +25,7 @@ impl PieceType {
         match self {
             PieceType::Pawn => 1,
             PieceType::Knight => 3,
-            PieceType::Bishop => 4,
+            PieceType::Bishop => 3,
             PieceType::Rook => 5,
             PieceType::Queen => 9,
             PieceType::King => 50,
@@ -182,10 +182,11 @@ impl Board<'_> {
     ///If the coordinates are valid, the Square's piece field is set.
     ///Actually physically replaces the preexisting Square to get around lifetime issues.
     ///Invalid coordinates panic.
-    fn set(&mut self, col_name: &char, row: u8, piece: &Piece<'_>) {
-        let lookup = self.squares.get(col_name);
+    fn set<'a>(&'a mut self, col_name: &char, row: u8, piece: &Piece<'a>) {
+        let lookup = self.squares.get_mut(col_name);
         let Some(col) = lookup else {
-            panic!("Board<'_>::set({col_name}, {row}, {piece}): No such column as {col_name}");
-        }
+            panic!("Board<'_>::set({col_name}, {row}, {:?}): No such column as {col_name}", piece);
+        };
+        col[row as usize].piece = Some(piece);
     }
 }
