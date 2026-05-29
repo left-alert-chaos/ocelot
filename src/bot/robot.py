@@ -60,6 +60,7 @@ class Sophisticate:
         if verbose: print(f"Elapsed dupe time: {board.elapsed_duplication}")
         if deep_result != None:
             if verbose: print(f"Found move in {time.time() - start} seconds.")
+            if verbose: print(f"Saw {tree.positions} positions.")
             return deep_result
 
         if verbose: print("Sophisticate.best_move(): reverting to random_best_move()")

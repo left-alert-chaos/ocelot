@@ -49,6 +49,7 @@ class SearchTree:
     def __init__(self, game: board.Board, color: board.PieceColor, depth: int):
         self.game = game
         self.color = color
+        self.positions = 0
         self.root = SearchNode(game, color, self, self)
         self.depth = depth
         self.best_value = 0.0
@@ -105,6 +106,7 @@ class SearchNode:
         self.move_results = {}
         self.value = manual.non_predictive(game, color)
         self.tree = tree
+        self.tree.positions += 1
         self.parent = parent
     
     #brazenly stolen from https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning#Pseudocode

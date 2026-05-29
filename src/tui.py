@@ -5,6 +5,7 @@ from physical import board, movement
 from evaluation import non_predictive
 import bot
 import sys
+from pprint import pprint
 
 game = board.Board()
 choice = input("Please enter a depth to evaluate (3 is kinda slow, but decent play): ")
@@ -18,7 +19,7 @@ def make_move():
     if movement.is_check(board.PieceColor.WHITE, game):
         print("I'm in check!!!")
     
-    move = robot.best_move()
+    move = robot.best_move(verbose=True)
     move.perform_on(game)
     print(move)
 
