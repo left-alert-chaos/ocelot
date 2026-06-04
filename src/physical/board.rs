@@ -3,14 +3,16 @@
 //!As a reminder, all row numbers are 0-indexed; what GothamChess would call a8 is a7 here, and a1
 //!is a0.
 
+#[allow(unused_imports)]
 use std::{
     collections::HashMap,
-    fmt::{Display, Debug}
+    fmt::{Display, Debug},
+    ops::{Index, IndexMut},
 };
 
 const LETTERS: &str = "abcdefgh";
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PieceType {
     Pawn,
     Knight,
@@ -33,10 +35,19 @@ impl PieceType {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Default)]
+#[derive(Debug, Eq, PartialEq, Clone, Default, Copy)]
 pub enum Color {
     #[default] White,
     Black,
+}
+
+impl Color {
+    fn value(&self) -> i32 {
+        match self {
+            Color::White => 1,
+            Color::Black => -1,
+        }
+    }
 }
 
 impl Color {
@@ -54,11 +65,11 @@ pub struct Square<'a> {
     pub(crate) row: u8,
     pub(crate) col: char,
     pub(crate) color: Color,
-    pub(crate) piece: Option<&'a Piece<'a>>,
+    pub(crate) piece: Option<Piece<'a>>,
 }
 
 ///A piece on a square.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Piece<'a> {
     pub(crate) color: Color,
     pub(crate) ptype: PieceType,
@@ -67,15 +78,13 @@ pub struct Piece<'a> {
 
 #[derive(Debug, Clone)]
 pub struct Board<'a> {
-    pub(crate) squares: HashMap<char, [Square<'a>; 8]>,
-    pub(crate) pieces: Vec<Piece<'a>>,
+    pub(crate) squares: [[Square<'a>; 8]; 8],
 }
 
 impl Default for Board<'_> {
     fn default() -> Self {
-        //CREATE SQUARES
-        let mut squares = HashMap::new();
-        
+        let mut arr = Vec::new();
+
         for col in LETTERS.chars() {
             //build vec of squares and convert to array
             let mut col_vec = Vec::new();
@@ -94,99 +103,43 @@ impl Default for Board<'_> {
 
             //now that vec has been built, attempt to convert to array and add to squares HashMap
             let maybe_array = col_vec.try_into();
-            if let Ok(arr) = maybe_array {
-                squares.insert(col, arr);
+            if let Ok(col_array) = maybe_array {
+                arr.push(col_array)
             } else {
                 panic!("Couldn't create squares array for column {col}");
             }
         };
 
+        //convert vec to array
+        let grid;
+        let maybe_grid = arr.try_into();
+        if let Ok(grid_array) = maybe_grid {
+            grid = grid_array;
+        } else {
+            panic!("Couldn't convert grid vector to array.");
+        }
+
         Board {
-            squares,
-            pieces: vec![]
+            squares: grid,
         }
     }
 }
 
-//lots of lifetime generics to imply that everything works
-/*
-impl<'a> Index<&'a char> for Board<'a> {
-    type Output = &'a [Square<'a>; 8];
-    fn index(&self, col_name: &'a char) -> &&'a [Square<'a>; 8] {
-        if self.squares.contains_key(col_name) {
-            if let Some(column) = self.squares.get(col_name) {
-                &&column
-            } else {
-                panic!("Board.squares.get({col_name}) returned None!")
-            }
-        } else {
-            panic!("Board.sqaures has no key {col_name}");
-        }
+impl<'a> Board<'a> {
+    fn square(&self, col: char, row: usize) -> &Square<'_> {
+        &self.squares[col_num(col)][row]
+    }
+
+    fn put_piece_on(&'a mut self, col: char, row: usize, piece: Piece<'a>) {
+        self.squares[col_num(col)][row].piece = Some(piece);
     }
 }
-*/
 
-/*
-impl<'a> Index<&'a char> for Board<'a> {
-    type Output = &'a Option<&'a [Square<'a>; 8]>;
-    fn index(&self, col_name: &'a char) -> &&'a Option<&'a [Square<'a>; 8]> {
-        if self.squares.contains_key(col_name) {
-            &&(*self).squares.get(col_name)
-        } else {
-            panic!("Board.squares.get({col_name}) returned None!");
-        }
-    }
-}
-*/
-
-//impl IndexMut<&'_ str> for Board<'_> {
-//    type Output = 
-//}
-
-#[allow(dead_code)]
-impl Board<'_> {
-    fn populate_column(&mut self, col_name: &char, ptype: PieceType) {
-        //let mut col = self.
-    }
-    /*
-    fn mutable_column<'a>(&mut self, col_name: &char) -> &mut'a [Square; 8] {
-        if self.squares.contains_key(col_name) {
-            if let Some(column) = self.squares.get_mut(col_name) {
-                &mut column
-            } else {
-                panic!("Board.squares.get({col_name}) returned None!");
-            }
-        } else {
-            panic!("Board.squares has no key {col_name}");
-        }
-    }
-    */
-
-    /*
-    fn new_mutable_column<'a>(&mut self, col_name: &char) -> Option<&'a mut [Square; 8]> {
-        self.squares.get_mut(col_name)
-    }
-    */
-
-    ///If the coordinates are valid, a &Square<'_> is returned.
-    ///Invalid coordinates panic.
-    fn get(&self, col_name: &char, row: u8) -> &Square<'_> {
-        let lookup = self.squares.get(col_name);
-        if let Some(col) = lookup {
-            &col[row as usize]
-        } else {
-            panic!("Board<'_>::get({col_name}, {row}): No such column as {col_name}!");
-        }
-    }
-    
-    ///If the coordinates are valid, the Square's piece field is set.
-    ///Actually physically replaces the preexisting Square to get around lifetime issues.
-    ///Invalid coordinates panic.
-    fn set<'a>(&'a mut self, col_name: &char, row: u8, piece: &Piece<'a>) {
-        let lookup = self.squares.get_mut(col_name);
-        let Some(col) = lookup else {
-            panic!("Board<'_>::set({col_name}, {row}, {:?}): No such column as {col_name}", piece);
-        };
-        col[row as usize].piece = Some(piece);
+pub fn col_num(name: char) -> usize {
+    let res = LETTERS.find(name);
+    if let Some(num) = res {
+        return num
+    } else {
+        panic!("Column {name} doesn't exist!");
     }
 }
