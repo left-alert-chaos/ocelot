@@ -1,4 +1,7 @@
 mod physical;
+
 fn main() {
-    println!("Hello, world!");
+    let mut b = physical::Board::new();
+    b = b.populate_starting_pos();
+    println!("{}", b.draw());
 }

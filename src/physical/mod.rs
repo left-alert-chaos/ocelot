@@ -6,3 +6,6 @@
 #[allow(dead_code)]
 pub mod board;
 pub mod movement;
+
+pub use board::Board;
+
