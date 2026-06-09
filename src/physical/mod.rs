@@ -7,5 +7,13 @@
 pub mod board;
 pub mod movement;
 
-pub use board::Board;
+pub use board::{
+    Board,
+    Coordinate,
+};
+
+pub use movement::{
+    Move,
+    Action,
+};
 

@@ -1,3 +1,4 @@
+//!# board
 //!Holds peices, piece information, board, etc.
 //!
 //!As a reminder, all row numbers are 0-indexed; what GothamChess would call a8 is a7 here, and a1
@@ -81,7 +82,7 @@ impl Color {
 
 ///# Coordinate
 ///Represents the location of a square or piece. All fields are public.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Coordinate {
     pub(crate) row: usize,
     pub(crate) col: char,
@@ -116,7 +117,7 @@ impl Coordinate {
 ///One square on the board.
 #[derive(Debug, Clone, Default)]
 pub struct Square {
-    location: Coordinate,
+    pub(crate) location: Coordinate,
     pub(crate) color: Color,
     pub(crate) piece: Option<Piece>,
 }
@@ -165,8 +166,7 @@ impl Piece {
 ///## new() -> Board
 ///Creates a new board.
 ///
-///## populate_starting_pos(self) -> Board
-///Consumes self and returns a new board with pieces in starting pos.
+///## populate_starting_pos(&mut self)
 ///
 ///## square(&self, col: char, row: usize) -> &Square<'_>
 ///Returns an immutable reference to the square at the specified locationl.
@@ -182,6 +182,9 @@ impl Piece {
 ///Returns Vec of mutable references to the pieces.
 ///Use sparingly, because it runs in O(n) time.
 ///
+///## remove_piece_on(&mut self, coord: &Coordinate)
+///Deletes the piece at the coordinate and removes coordinate from piece locations list.
+///
 ///## white_pieces(&mut self) -> Vec<&Piece<'a>>
 ///Similar to `pieces()`, but returns only white pieces.
 ///
@@ -194,7 +197,7 @@ impl Piece {
 #[derive(Debug, Clone)]
 pub struct Board {
     squares: [[Square; 8]; 8],
-    locations: Vec<Coordinate>, //stores locations of pieces
+    pub(crate) locations: Vec<Coordinate>, //stores locations of pieces
     pub(crate) turn: Color,
 }
 
@@ -245,7 +248,7 @@ impl Board {
         }
     }
 
-    pub fn populate_starting_pos(mut self) -> Self {
+    pub fn populate_starting_pos(&mut self) {
         //go through each column and put corresponding piece
         self.populate_column('a', PieceType::Rook);
         self.populate_column('h', PieceType::Rook);
@@ -255,8 +258,6 @@ impl Board {
         self.populate_column('f', PieceType::Bishop);
         self.populate_column('d', PieceType::Queen);
         self.populate_column('e', PieceType::King);
-
-        self 
     }
 
     //this is private because it's just a dependency of populate_starting_pos()
@@ -297,6 +298,12 @@ impl Board {
     pub fn put_piece_on(&mut self, coord: &Coordinate, piece: Piece) {
         let s = self.mut_square(coord);
         s.piece = Some(piece);
+    }
+
+    pub fn remove_piece_on(&mut self, coord: &Coordinate) {
+        //delete piece and remove location from locations
+        self.mut_square(coord).piece = None;
+        self.locations.retain(|loc| loc != coord);
     }
 
     ///Keep in mind that `pieces()` returns *copies* of pieces on the board, not the pieces
