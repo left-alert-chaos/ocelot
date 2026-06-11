@@ -47,7 +47,6 @@ impl PieceType {
             PieceType::King => 'k',
         }
     }
-
 }
 
 ///# Color
@@ -126,14 +125,22 @@ impl Square {
     //dependency of Board::draw()
     fn draw(&self) -> String {
         //find ansi codes
-        let bg = if self.color == Color::Black {"\x1b[40m"} else {"\x1b[47m"};
-        let fg = if self.color == Color::Black {"\x1b[0;37m"} else {"\x1b[30m"};
+        let bg = if self.color == Color::Black {
+            "\x1b[40m"
+        } else {
+            "\x1b[47m"
+        };
+        let fg = if self.color == Color::Black {
+            "\x1b[0;37m"
+        } else {
+            "\x1b[30m"
+        };
         let piece = if let Some(p) = self.piece {
             p.draw()
         } else {
             String::from("  ")
         };
-        
+
         format!("{bg}{fg}{piece}\x1b[0m")
     }
 }
@@ -184,6 +191,10 @@ impl Piece {
 ///
 ///## remove_piece_on(&mut self, coord: &Coordinate)
 ///Deletes the piece at the coordinate and removes coordinate from piece locations list.
+///
+///## move_from(&mut self, from: &Coordinate, to: &Coordinate)
+///Moves the piece on from to the square at to.
+///Locations are managed automatically.
 ///
 ///## white_pieces(&mut self) -> Vec<&Piece<'a>>
 ///Similar to `pieces()`, but returns only white pieces.
@@ -263,26 +274,38 @@ impl Board {
     //this is private because it's just a dependency of populate_starting_pos()
     fn populate_column(&mut self, col: char, ptype: PieceType) {
         //place non-pawns
-        self.put_piece_on(&Coordinate::new(col, 0), Piece {
-            color: Color::White,
-            ptype,
-        });
-        self.put_piece_on(&Coordinate::new(col, 7), Piece {
-            color: Color::Black,
-            ptype,
-        });
+        self.put_piece_on(
+            &Coordinate::new(col, 0),
+            Piece {
+                color: Color::White,
+                ptype,
+            },
+        );
+        self.put_piece_on(
+            &Coordinate::new(col, 7),
+            Piece {
+                color: Color::Black,
+                ptype,
+            },
+        );
 
         //pawns
-        self.put_piece_on(&Coordinate::new(col, 1), Piece {
-            color: Color::White,
-            ptype: PieceType::Pawn,
-        });
-        self.put_piece_on(&Coordinate::new(col, 6), Piece {
-            color: Color::Black,
-            ptype: PieceType::Pawn,
-        });
+        self.put_piece_on(
+            &Coordinate::new(col, 1),
+            Piece {
+                color: Color::White,
+                ptype: PieceType::Pawn,
+            },
+        );
+        self.put_piece_on(
+            &Coordinate::new(col, 6),
+            Piece {
+                color: Color::Black,
+                ptype: PieceType::Pawn,
+            },
+        );
     }
-    
+
     pub fn square(&self, coord: &Coordinate) -> &Square {
         &self.squares[col_num(coord.col)][coord.row]
     }
@@ -298,12 +321,24 @@ impl Board {
     pub fn put_piece_on(&mut self, coord: &Coordinate, piece: Piece) {
         let s = self.mut_square(coord);
         s.piece = Some(piece);
+        self.locations.push(*coord);
     }
 
     pub fn remove_piece_on(&mut self, coord: &Coordinate) {
         //delete piece and remove location from locations
         self.mut_square(coord).piece = None;
         self.locations.retain(|loc| loc != coord);
+    }
+
+    pub fn move_from(&mut self, from: &Coordinate, to: &Coordinate) {
+        let from_square = self.mut_square(from);
+        let moving_piece = from_square.piece.expect(
+            format!("Moving from {from} to {to} isn't possible because there is no piece to move.")
+                .as_str(),
+        );
+
+        self.remove_on(from);
+        self.put_piece_on(to, moving_piece);
     }
 
     ///Keep in mind that `pieces()` returns *copies* of pieces on the board, not the pieces
@@ -315,7 +350,9 @@ impl Board {
             if let Some(piece) = self.square(loc).piece {
                 pieces.push(piece)
             } else {
-                eprintln!("Board::pieces(): Location {loc} is in Board.locations, but there is no piece there!");
+                eprintln!(
+                    "Board::pieces(): Location {loc} is in Board.locations, but there is no piece there!"
+                );
             }
         }
 
@@ -334,12 +371,16 @@ impl Board {
             for col in LETTERS.chars() {
                 output.push_str(" | ");
                 //get square, draw, convert to str
-                output.push_str(self.square(&Coordinate::new(col, row as usize)).draw().as_str());
+                output.push_str(
+                    self.square(&Coordinate::new(col, row as usize))
+                        .draw()
+                        .as_str(),
+                );
             }
 
             row -= 1;
         }
-        
+
         output
     }
 }
