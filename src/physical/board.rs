@@ -114,7 +114,7 @@ impl Coordinate {
 
 ///# Square
 ///One square on the board.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct Square {
     pub(crate) location: Coordinate,
     pub(crate) color: Color,
@@ -147,7 +147,7 @@ impl Square {
 
 ///# Piece
 ///A piece on a square.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Piece {
     pub(crate) color: Color,
     pub(crate) ptype: PieceType,
@@ -205,11 +205,37 @@ impl Piece {
 ///## draw(&self) -> String
 ///Draws a crude ascii board to represent the current position.
 ///The fmt::Display implementation uses draw().
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct Board {
     squares: [[Square; 8]; 8],
     pub(crate) locations: Vec<Coordinate>, //stores locations of pieces
     pub(crate) turn: Color,
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.draw())
+    }
+}
+
+impl PartialEq for Board {
+    //VERY INEFFICENT
+    fn eq(&self, other: &Self) -> bool {
+        if self.turn != other.turn {
+            return false;
+        } else if self.squares != other.squares {
+            return false;
+        } else {
+            //search locations
+            for loc in self.locations.clone() {
+                if !other.locations.contains(&loc) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
 }
 
 impl Board {

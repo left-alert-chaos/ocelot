@@ -1,5 +1,5 @@
 mod physical;
-use physical::{Action, Move, Castle, CastleSide, Color};
+use physical::{Action, Castle, CastleSide, Color, Move};
 
 fn main() {
     let mut b = physical::Board::new();

@@ -2,12 +2,12 @@
 //!Handles impls for piece movement, move generation, legality checking, etc.
 
 use crate::physical::board;
-use board::{Board, Coordinate};
+use board::{Board, Color, Coordinate};
 use std::fmt;
 
 pub trait Action {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
-                                                //information to restore in undo()
+    //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
     fn _is_illegal(&self, _game: &Board) -> bool {
         false
@@ -92,10 +92,10 @@ impl Action for Move {
             game.put_piece_on(
                 &ep_loc,
                 board::Piece {
-                    color: if moving_piece.color == board::Color::White {
-                        board::Color::Black
+                    color: if moving_piece.color == Color::White {
+                        Color::Black
                     } else {
-                        board::Color::White
+                        Color::White
                     },
                     ptype: board::PieceType::Pawn,
                 },
@@ -105,7 +105,11 @@ impl Action for Move {
         //restore capture
         if let Some(captured_type) = self.captured_type {
             let restored_piece = board::Piece {
-                color: if moving_piece.color == board::Color::White {board::Color::Black} else {board::Color::White},
+                color: if moving_piece.color == Color::White {
+                    Color::Black
+                } else {
+                    Color::White
+                },
                 ptype: captured_type,
             };
             game.put_piece_on(&self.to, restored_piece);
@@ -163,11 +167,11 @@ pub enum CastleSide {
 ///
 ///# Public Methods
 ///
-///## new(side: CastleSide, player: board::Color) -> Self
+///## new(side: CastleSide, player: Color) -> Self
 ///Simple abstraction to functionally instantiate the struct.
 pub struct Castle {
     side: CastleSide,
-    player: board::Color,
+    player: Color,
 }
 
 impl Action for Castle {
@@ -226,17 +230,46 @@ impl Action for Castle {
 }
 
 impl Castle {
-    pub fn new(side: CastleSide, player: board::Color) -> Self {
-        Castle {
-            side,
-            player,
-        }
+    pub fn new(side: CastleSide, player: Color) -> Self {
+        Castle { side, player }
     }
 
     fn row(&self) -> usize {
         match self.player {
-            board::Color::White => 0,
-            board::Color::Black => 7,
+            Color::White => 0,
+            Color::Black => 7,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    //used to create a test board
+    fn default_board() -> Board {
+        let mut b = Board::new();
+        b.populate_starting_pos();
+        b
+    }
+
+    #[test]
+    fn undo_move() {
+        //create default board
+        let mut b = default_board();
+        let backup = b.clone();
+
+        //move king to center of board because why not
+        let mut m = Move::new(
+            Coordinate::new('e', 0),
+            Coordinate::new('e', 3),
+            &b,
+            None,
+            false,
+        );
+        m.perform_on(&mut b);
+        m.undo_on(&mut b);
+
+        assert_eq!(b, backup);
     }
 }

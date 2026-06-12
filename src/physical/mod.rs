@@ -7,6 +7,6 @@
 pub mod board;
 pub mod movement;
 
-pub use board::{Board, Coordinate, Color};
+pub use board::{Board, Color, Coordinate};
 
-pub use movement::{Action, Move, Castle, CastleSide};
+pub use movement::{Action, Castle, CastleSide, Move};
