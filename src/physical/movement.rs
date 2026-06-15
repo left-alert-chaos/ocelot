@@ -2,7 +2,7 @@
 //!Handles impls for piece movement, move generation, legality checking, etc.
 
 use crate::physical::board;
-use board::{Board, Color, Coordinate};
+use board::{Board, Color, Coordinate, Piece, PieceType};
 use std::fmt;
 
 pub trait Action {
@@ -20,15 +20,15 @@ pub trait Action {
 ///# Public Methods
 ///
 ///## new(from: Coordinate, to: board::Coordinate, en_passant: Option<board::Coordinate>,
-///value: u32, promotion: Option<board::PieceType>)
+///value: u32, promotion: Option<PieceType>)
 #[derive(Copy, Clone)]
 pub struct Move {
     from: Coordinate,
     to: Coordinate,
     en_passant: Option<Coordinate>,
     value: u32,
-    promotion: Option<board::PieceType>,
-    captured_type: Option<board::PieceType>,
+    promotion: Option<PieceType>,
+    captured_type: Option<PieceType>,
 }
 
 impl fmt::Display for Move {
@@ -80,7 +80,7 @@ impl Action for Move {
 
         //handle un-promoting
         if let Some(_) = self.promotion {
-            moving_piece.ptype = board::PieceType::Pawn;
+            moving_piece.ptype = PieceType::Pawn;
         }
 
         //perform un-move
@@ -91,26 +91,28 @@ impl Action for Move {
         if let Some(ep_loc) = self.en_passant {
             game.put_piece_on(
                 &ep_loc,
-                board::Piece {
+                Piece {
                     color: if moving_piece.color == Color::White {
                         Color::Black
                     } else {
                         Color::White
                     },
-                    ptype: board::PieceType::Pawn,
+                    ptype: PieceType::Pawn,
+                    location: ep_loc,
                 },
             );
         }
 
         //restore capture
         if let Some(captured_type) = self.captured_type {
-            let restored_piece = board::Piece {
+            let restored_piece = Piece {
                 color: if moving_piece.color == Color::White {
                     Color::Black
                 } else {
                     Color::White
                 },
                 ptype: captured_type,
+                location: self.to,
             };
             game.put_piece_on(&self.to, restored_piece);
         }
@@ -122,7 +124,7 @@ impl Move {
         from: Coordinate,
         to: board::Coordinate,
         game: &Board,
-        promotion: Option<board::PieceType>,
+        promotion: Option<PieceType>,
         en_passant: bool,
     ) -> Self {
         let en_passant_location = if en_passant {
@@ -271,5 +273,72 @@ mod tests {
         m.undo_on(&mut b);
 
         assert_eq!(b, backup);
+    }
+}
+
+//seperate impl for move generation
+impl Piece {
+    pub fn potential_moves(&self, game: &Board) -> Vec<impl Action> {
+        match self.ptype {
+            PieceType::Rook => self.rook_moves(game),
+            _ => Vec::new(),
+        }
+    }
+
+    fn rook_moves(&self, game: &Board) -> Vec<impl Action> {
+        let mut moves = self.project(game, 1, 0);
+        moves.append(&mut self.project(game, -1, 0));
+        moves.append(&mut self.project(game, 0, 1));
+        moves.append(&mut self.project(game, 0, -1));
+        moves
+    }
+
+    //project in a direction until a collision or end of board
+    fn project(&self, game: &Board, rise: i32, run: i32) -> Vec<impl Action> {
+        let mut moves = Vec::new();
+
+        let mut coord = self.location;
+
+        //loop until end of board
+        while coord.is_valid() {
+            //increment with row and col char
+            //involves typecasting to ensure no overflows
+            if rise < 0 {
+                coord.row -= (-1 * rise) as usize;
+            } else {
+                coord.row += rise as usize
+            };
+
+            let mut col_index = board::col_num(coord.col);
+            if run < 0 {
+                col_index -= (-1 * run) as usize;
+            } else {
+                col_index += run as usize;
+            }
+
+            if col_index > 7 {
+                break;
+            }
+
+            coord.col = board::LETTERS.chars().nth(col_index).unwrap();
+
+            let square = game.square(&coord);
+
+            //create move
+            let m = Move::new(self.location, coord, game, None, false);
+
+            if square.piece == None {
+                moves.push(m)
+            } else if let Some(piece) = square.piece {
+                if piece.color != self.color {
+                    //capture?
+                    moves.push(m)
+                }
+
+                break; //it blocks movement regardless
+            }
+        }
+
+        moves
     }
 }

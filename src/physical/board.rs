@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-const LETTERS: &str = "abcdefgh";
+pub const LETTERS: &str = "abcdefgh";
 
 ///# PieceType
 ///Represents a piece type.
@@ -81,6 +81,11 @@ impl Color {
 
 ///# Coordinate
 ///Represents the location of a square or piece. All fields are public.
+///
+///# Public Methods
+///
+///## is_valid(&self) -> bool
+///Determines whether coordinate fits into an 8 by 8 board
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Coordinate {
     pub(crate) row: usize,
@@ -96,6 +101,10 @@ impl fmt::Display for Coordinate {
 }
 
 impl Coordinate {
+    pub fn is_valid(&self) -> bool {
+        self.row < 8 && LETTERS.contains(self.col)
+    }
+
     fn color(&self) -> Option<Color> {
         let col_num = LETTERS.find(self.col)?;
 
@@ -114,6 +123,11 @@ impl Coordinate {
 
 ///# Square
 ///One square on the board.
+///
+///# Public Methods
+///
+///## value(&self) -> i32
+///The value of the piece on the square. If there is no piece, value is 0.
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct Square {
     pub(crate) location: Coordinate,
@@ -122,6 +136,14 @@ pub struct Square {
 }
 
 impl Square {
+    pub fn value(&self) -> i32 {
+        if let Some(piece) = self.piece {
+            piece.ptype.value()
+        } else {
+            0
+        }
+    }
+
     //dependency of Board::draw()
     fn draw(&self) -> String {
         //find ansi codes
@@ -147,10 +169,16 @@ impl Square {
 
 ///# Piece
 ///A piece on a square.
+///
+///# Public Methods
+///
+///## potential_moves(&self, game: &board::Board) -> Vec<Action>
+///Gets potential moves that don't collide, but doesn't check for legality
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Piece {
     pub(crate) color: Color,
     pub(crate) ptype: PieceType,
+    pub(crate) location: Coordinate,
 }
 
 impl Piece {
@@ -300,34 +328,42 @@ impl Board {
     //this is private because it's just a dependency of populate_starting_pos()
     fn populate_column(&mut self, col: char, ptype: PieceType) {
         //place non-pawns
+        let c = Coordinate::new(col, 0);
         self.put_piece_on(
-            &Coordinate::new(col, 0),
+            &c,
             Piece {
                 color: Color::White,
                 ptype,
+                location: c,
             },
         );
+        let c = Coordinate::new(col, 7);
         self.put_piece_on(
-            &Coordinate::new(col, 7),
+            &c,
             Piece {
                 color: Color::Black,
                 ptype,
+                location: c,
             },
         );
 
         //pawns
+        let c = Coordinate::new(col, 1);
         self.put_piece_on(
-            &Coordinate::new(col, 1),
+            &c,
             Piece {
                 color: Color::White,
                 ptype: PieceType::Pawn,
+                location: c,
             },
         );
+        let c = Coordinate::new(col, 6);
         self.put_piece_on(
-            &Coordinate::new(col, 6),
+            &c,
             Piece {
                 color: Color::Black,
                 ptype: PieceType::Pawn,
+                location: c,
             },
         );
     }
@@ -344,8 +380,9 @@ impl Board {
         self.squares[col_num(coord.col)][coord.row].piece = None;
     }
 
-    pub fn put_piece_on(&mut self, coord: &Coordinate, piece: Piece) {
+    pub fn put_piece_on(&mut self, coord: &Coordinate, mut piece: Piece) {
         let s = self.mut_square(coord);
+        piece.location = *coord;
         s.piece = Some(piece);
         self.locations.push(*coord);
     }
