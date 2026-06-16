@@ -56,11 +56,27 @@ impl PieceType {
 ///
 ///## value(&self) -> i32
 ///returns 1 for White and -1 for Black
-#[derive(Debug, Eq, PartialEq, Clone, Default, Copy)]
+#[derive(Eq, PartialEq, Clone, Default, Copy)]
 pub enum Color {
     #[default]
     White,
     Black,
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let word = match self {
+            Self::White => "White",
+            Self::Black => "Black",
+        };
+        write!(f, "{word}")
+    }
+}
+
+impl fmt::Debug for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{self}")
+    }
 }
 
 impl Color {

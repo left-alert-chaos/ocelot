@@ -5,7 +5,7 @@ use crate::physical::board;
 use board::{Board, Color, Coordinate, Piece, PieceType};
 use std::fmt;
 
-pub trait Action {
+pub trait Action: fmt::Debug {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
@@ -38,6 +38,12 @@ impl fmt::Display for Move {
             "Move from {} to {} with value {}",
             self.from, self.to, self.value
         )
+    }
+}
+
+impl fmt::Debug for Move {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{self} [DEBUG]")
     }
 }
 
@@ -164,6 +170,16 @@ pub enum CastleSide {
     QueenSide,
 }
 
+impl fmt::Display for CastleSide {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let phrase = match self {
+            Self::KingSide => "King Side",
+            Self::QueenSide => "Queen Side",
+        };
+        write!(f, "{phrase}")
+    }
+}
+
 ///# Castle
 ///Represents a castling move. Implements Action.
 ///
@@ -174,6 +190,18 @@ pub enum CastleSide {
 pub struct Castle {
     side: CastleSide,
     player: Color,
+}
+
+impl fmt::Display for Castle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {} castles", self.player, self.side)
+    }
+}
+
+impl fmt::Debug for Castle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{self} [DEBUG]")
+    }
 }
 
 impl Action for Castle {
@@ -244,6 +272,99 @@ impl Castle {
     }
 }
 
+//seperate impl for move generation
+impl Piece {
+    pub fn potential_moves(&self, game: &Board) -> Vec<impl Action> {
+        match self.ptype {
+            PieceType::Rook => self.rook_moves(game),
+            PieceType::Bishop => self.bishop_moves(game),
+            PieceType::Queen => { //queen movement is just rook and bishop combined
+                let mut moves = self.rook_moves(game);
+                moves.append(&mut self.bishop_moves(game));
+                moves
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn rook_moves(&self, game: &Board) -> Vec<Move> {
+        let mut moves = self.project(game, 1, 0);
+        moves.append(&mut self.project(game, -1, 0));
+        moves.append(&mut self.project(game, 0, 1));
+        moves.append(&mut self.project(game, 0, -1));
+        moves
+    }
+
+    fn bishop_moves(&self, game: &Board) -> Vec<Move> {
+        let mut moves = self.project(game, 1, 1);
+        moves.append(&mut self.project(game, -1, 1));
+        moves.append(&mut self.project(game, -1, -1));
+        moves.append(&mut self.project(game, 1, -1));
+        moves
+    }
+
+    //project in a direction until a collision or end of board
+    fn project(&self, game: &Board, rise: i32, run: i32) -> Vec<Move> {
+        let mut moves = Vec::new();
+
+        let mut coord = self.location;
+
+        //loop until end of board
+        loop {
+            //increment with row and col char
+            //involves typecasting to ensure no overflows
+            if rise < 0 {
+                if coord.row == 0 {
+                    break; //can't subtract from 0
+                }
+                coord.row -= (-1 * rise) as usize;
+            } else {
+                coord.row += rise as usize
+            };
+
+            println!("New coord: {coord}");
+
+            let mut col_index = board::col_num(coord.col);
+            if run < 0 {
+                if col_index == 0 {
+                    break; //can't subtract from 0
+                }
+                col_index -= (-1 * run) as usize;
+            } else {
+                col_index += run as usize;
+            }
+
+            if col_index > 7 {
+                break;
+            }
+
+            if !coord.is_valid() {
+                break;
+            }
+
+            coord.col = board::LETTERS.chars().nth(col_index).unwrap();
+
+            let square = game.square(&coord);
+
+            //create move
+            let m = Move::new(self.location, coord, game, None, false);
+
+            if square.piece == None {
+                moves.push(m)
+            } else if let Some(piece) = square.piece {
+                if piece.color != self.color {
+                    //capture?
+                    moves.push(m)
+                }
+
+                break; //it blocks movement regardless
+            }
+        }
+
+        moves
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -274,71 +395,15 @@ mod tests {
 
         assert_eq!(b, backup);
     }
-}
 
-//seperate impl for move generation
-impl Piece {
-    pub fn potential_moves(&self, game: &Board) -> Vec<impl Action> {
-        match self.ptype {
-            PieceType::Rook => self.rook_moves(game),
-            _ => Vec::new(),
-        }
-    }
+    #[test]
+    fn no_rook_moves() {
+        //no rook moves at the start
+        let b = default_board();
 
-    fn rook_moves(&self, game: &Board) -> Vec<impl Action> {
-        let mut moves = self.project(game, 1, 0);
-        moves.append(&mut self.project(game, -1, 0));
-        moves.append(&mut self.project(game, 0, 1));
-        moves.append(&mut self.project(game, 0, -1));
-        moves
-    }
-
-    //project in a direction until a collision or end of board
-    fn project(&self, game: &Board, rise: i32, run: i32) -> Vec<impl Action> {
-        let mut moves = Vec::new();
-
-        let mut coord = self.location;
-
-        //loop until end of board
-        while coord.is_valid() {
-            //increment with row and col char
-            //involves typecasting to ensure no overflows
-            if rise < 0 {
-                coord.row -= (-1 * rise) as usize;
-            } else {
-                coord.row += rise as usize
-            };
-
-            let mut col_index = board::col_num(coord.col);
-            if run < 0 {
-                col_index -= (-1 * run) as usize;
-            } else {
-                col_index += run as usize;
-            }
-
-            if col_index > 7 {
-                break;
-            }
-
-            coord.col = board::LETTERS.chars().nth(col_index).unwrap();
-
-            let square = game.square(&coord);
-
-            //create move
-            let m = Move::new(self.location, coord, game, None, false);
-
-            if square.piece == None {
-                moves.push(m)
-            } else if let Some(piece) = square.piece {
-                if piece.color != self.color {
-                    //capture?
-                    moves.push(m)
-                }
-
-                break; //it blocks movement regardless
-            }
-        }
-
-        moves
+        let c = Coordinate::new('a', 7);
+        let square = b.square(&c);
+        let piece = square.piece.unwrap();
+        assert_eq!(piece.potential_moves(&b).len(), 0);
     }
 }
