@@ -283,6 +283,8 @@ impl Piece {
                 moves.append(&mut self.bishop_moves(game));
                 moves
             }
+            PieceType::King => self.king_moves(game),
+            PieceType::Knight => self.knight_moves(game),
             _ => Vec::new(),
         }
     }
@@ -323,11 +325,48 @@ impl Piece {
         moves
     }
 
+    fn knight_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
+        let mut moves: Vec<Box<dyn Action>> = Vec::new();
+        
+        self.try_square(game, 2, 1, &mut moves);
+        self.try_square(game, 1, 2, &mut moves);
+        self.try_square(game, -1, 2, &mut moves);
+        self.try_square(game, -2, 1, &mut moves);
+        self.try_square(game, -2, -1, &mut moves);
+        self.try_square(game, -1, -2, &mut moves);
+        self.try_square(game, 1, -2, &mut moves);
+        self.try_square(game, 2, -1, &mut moves);
+
+        moves
+    }
+
     fn try_square(&self, game: &Board, rise: i32, run: i32, buffer: &mut Vec<Box<dyn Action>>) {
         //apply movement
         let mut location = self.location;
-        location.row += rise as usize;
-        location.col += run as usize;
+
+        if rise < 0 {
+            let offset = (rise * -1) as usize;
+            
+            //can't leave board
+            if offset > location.row {
+                return;
+            }
+
+            location.row -= (rise * -1) as usize; //convert to positive number and subtract
+        } else {
+            location.row += rise as usize;
+        }
+        if run < 0 {
+            let offset = (run * -1) as usize;
+
+            //can't leave board
+            if offset > location.col {
+                return;
+            }
+            location.col -= offset; //convert to positive number and subtract
+        } else {
+            location.col += rise as usize;
+        }
 
         //find square value
         let value = self.square_value(game, &location);
@@ -448,12 +487,22 @@ mod tests {
     }
 
     #[test]
-    fn no_king_moves() {
+    fn only_castling() {
         let b = default_board();
 
         let c = Coordinate::new(4, 0); //white king
         let square = b.square(&c);
         let piece = square.piece.unwrap();
-        assert_eq!(piece.potential_moves(&b).len(), 0);
+        assert_eq!(piece.potential_moves(&b).len(), 2);
+    }
+
+    #[test]
+    fn two_knight_moves() {
+        let b = default_board();
+
+        let c = Coordinate::new(1, 0);
+        let square = b.square(&c);
+        let piece = square.piece.unwrap();
+        assert_eq!(piece.potential_moves(&b).len(), 2);
     }
 }

@@ -111,9 +111,7 @@ pub struct Coordinate {
 
 impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let col = self.col;
-        let row = self.row;
-        write!(f, "Coordinate {col}{row}")
+        write!(f, "Coordinate col = {} row = {}", self.col, self.row)
     }
 }
 
