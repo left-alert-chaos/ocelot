@@ -274,7 +274,7 @@ impl Castle {
 
 //seperate impl for move generation
 impl Piece {
-    pub fn potential_moves(&self, game: &Board) -> Vec<impl Action> {
+    pub fn potential_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         match self.ptype {
             PieceType::Rook => self.rook_moves(game),
             PieceType::Bishop => self.bishop_moves(game),
@@ -287,7 +287,7 @@ impl Piece {
         }
     }
 
-    fn rook_moves(&self, game: &Board) -> Vec<Move> {
+    fn rook_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         let mut moves = self.project(game, 1, 0);
         moves.append(&mut self.project(game, -1, 0));
         moves.append(&mut self.project(game, 0, 1));
@@ -295,7 +295,7 @@ impl Piece {
         moves
     }
 
-    fn bishop_moves(&self, game: &Board) -> Vec<Move> {
+    fn bishop_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         let mut moves = self.project(game, 1, 1);
         moves.append(&mut self.project(game, -1, 1));
         moves.append(&mut self.project(game, -1, -1));
@@ -303,9 +303,43 @@ impl Piece {
         moves
     }
 
+    fn king_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
+        let mut moves: Vec<Box<dyn Action>> = Vec::new();
+        
+        //castling legality is determined later; for now it's just included
+        moves.push(Box::new(Castle::new(CastleSide::KingSide, self.color)));
+        moves.push(Box::new(Castle::new(CastleSide::QueenSide, self.color)));
+
+        //try all 8 surrounding squares
+        self.try_square(game, 1, 1, &mut moves);
+        self.try_square(game, 0, 1, &mut moves);
+        self.try_square(game, -1, 1, &mut moves);
+        self.try_square(game, -1, 0, &mut moves);
+        self.try_square(game, -1, -1, &mut moves);
+        self.try_square(game, 0, -1, &mut moves);
+        self.try_square(game, 1, -1, &mut moves);
+        self.try_square(game, 1, 0, &mut moves);
+
+        moves
+    }
+
+    fn try_square(&self, game: &Board, rise: i32, run: i32, buffer: &mut Vec<Box<dyn Action>>) {
+        //apply movement
+        let mut location = self.location;
+        location.row += rise as usize;
+        location.col += run as usize;
+
+        //find square value
+        let value = self.square_value(game, &location);
+        if let Some(_) = value {
+            //create move to square
+            buffer.push(Box::new(Move::new(self.location, location, game, None, false)));
+        }
+    }
+
     //project in a direction until a collision or end of board
-    fn project(&self, game: &Board, rise: i32, run: i32) -> Vec<Move> {
-        let mut moves = Vec::new();
+    fn project(&self, game: &Board, rise: i32, run: i32) -> Vec<Box<dyn Action>> {
+        let mut moves: Vec<Box<dyn Action>> = Vec::new();
 
         let mut coord = self.location;
 
@@ -339,24 +373,35 @@ impl Piece {
                 break;
             }
 
-            let square = game.square(&coord);
-
             //create move
             let m = Move::new(self.location, coord, game, None, false);
 
-            if square.piece == None {
-                moves.push(m)
-            } else if let Some(piece) = square.piece {
-                if piece.color != self.color {
-                    //capture?
-                    moves.push(m)
+            let value = self.square_value(game, &coord);
+            if let Some(v) = value {
+                moves.push(Box::new(m));
+                if v > 0 {
+                    break
                 }
-
-                break; //it blocks movement regardless
+            } else {
+                break //returned None, so illegal
             }
         }
 
         moves
+    }
+
+    //returns Some(0) for empty square and None for square occupied by piece of same color
+    fn square_value(&self, game: &Board, location: &Coordinate) -> Option<u32> {
+        let square = game.square(location);
+        if let Some(piece) = square.piece {
+            if piece.color != self.color {
+                Some(piece.ptype.value() as u32)
+            } else {
+                None
+            }
+        } else {
+            Some(0)
+        }
     }
 }
 
@@ -396,7 +441,17 @@ mod tests {
         //no rook moves at the start
         let b = default_board();
 
-        let c = Coordinate::new(0, 7);
+        let c = Coordinate::new(0, 7); //black rook
+        let square = b.square(&c);
+        let piece = square.piece.unwrap();
+        assert_eq!(piece.potential_moves(&b).len(), 0);
+    }
+
+    #[test]
+    fn no_king_moves() {
+        let b = default_board();
+
+        let c = Coordinate::new(4, 0); //white king
         let square = b.square(&c);
         let piece = square.piece.unwrap();
         assert_eq!(piece.potential_moves(&b).len(), 0);
