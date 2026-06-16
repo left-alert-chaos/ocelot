@@ -322,8 +322,6 @@ impl Piece {
                 coord.row += rise as usize
             };
 
-            println!("New coord: {coord}");
-
             let mut col_index = board::col_num(coord.col);
             if run < 0 {
                 if col_index == 0 {

@@ -5,6 +5,7 @@
 //!is a0.
 
 use std::fmt;
+use std::mem::{self, MaybeUninit};
 
 pub const LETTERS: &str = "abcdefgh";
 
@@ -144,7 +145,7 @@ impl Coordinate {
 ///
 ///## value(&self) -> i32
 ///The value of the piece on the square. If there is no piece, value is 0.
-#[derive(Debug, Clone, Default, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct Square {
     pub(crate) location: Coordinate,
     pub(crate) color: Color,
@@ -284,12 +285,13 @@ impl PartialEq for Board {
 
 impl Board {
     pub fn new() -> Self {
-        let mut arr = Vec::new();
+        let mut uninit_arr: [MaybeUninit<[Square; 8]>; 8] = [MaybeUninit::uninit(); 8];
         let mut locations = Vec::new();
 
         for col in LETTERS.chars() {
             //build vec of squares and convert to array
-            let mut col_vec = Vec::new();
+            let mut uninit_col_array: [MaybeUninit<Square>; 8] = [MaybeUninit::uninit(); 8];
+
             for row in 0..8 {
                 let coord = Coordinate { row, col };
                 locations.push(coord);
@@ -297,29 +299,23 @@ impl Board {
                 let color = coord.color().unwrap_or(Color::White);
 
                 //create square
-                col_vec.push(Square {
+                uninit_col_array[row].write(Square {
                     location: coord,
                     color,
                     piece: None,
-                })
+                });
             }
 
-            //now that vec has been built, attempt to convert to array and add to squares HashMap
-            let maybe_array = col_vec.try_into();
-            if let Ok(col_array) = maybe_array {
-                arr.push(col_array)
-            } else {
-                panic!("Couldn't create squares array for column {col}");
+            unsafe {
+                let col_array = mem::transmute::<_, [Square; 8]>(uninit_col_array);
+                uninit_arr[col_num(col)].write(col_array);
             }
         }
 
-        //convert vec to array
+        //convert uninitialized cols into array
         let grid;
-        let maybe_grid = arr.try_into();
-        if let Ok(grid_array) = maybe_grid {
-            grid = grid_array;
-        } else {
-            panic!("Couldn't convert grid vector to array.");
+        unsafe {
+            grid = mem::transmute::<_, [[Square; 8]; 8]>(uninit_arr);
         }
 
         Board {
