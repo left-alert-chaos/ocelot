@@ -7,8 +7,8 @@ fn main() {
 
     //move king to center of board because why not
     let mut m = Move::new(
-        physical::Coordinate::new('e', 0),
-        physical::Coordinate::new('e', 3),
+        physical::Coordinate::new(4, 0),
+        physical::Coordinate::new(4, 3),
         &b,
         None,
         false,

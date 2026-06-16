@@ -106,7 +106,7 @@ impl Color {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Coordinate {
     pub(crate) row: usize,
-    pub(crate) col: char,
+    pub(crate) col: usize,
 }
 
 impl fmt::Display for Coordinate {
@@ -119,21 +119,19 @@ impl fmt::Display for Coordinate {
 
 impl Coordinate {
     pub fn is_valid(&self) -> bool {
-        self.row < 8 && LETTERS.contains(self.col)
+        self.row < 8 && self.col < 8
     }
 
     fn color(&self) -> Option<Color> {
-        let col_num = LETTERS.find(self.col)?;
-
         //if the row num plus the col num is even, return black. Else, white.
-        if (col_num + self.row).is_multiple_of(2) {
+        if (self.col + self.row).is_multiple_of(2) {
             Some(Color::Black)
         } else {
             Some(Color::White)
         }
     }
 
-    pub fn new(col: char, row: usize) -> Self {
+    pub fn new(col: usize, row: usize) -> Self {
         Coordinate { row, col }
     }
 }
@@ -288,12 +286,12 @@ impl Board {
         let mut uninit_arr: [MaybeUninit<[Square; 8]>; 8] = [MaybeUninit::uninit(); 8];
         let mut locations = Vec::new();
 
-        for col in LETTERS.chars() {
+        for col in 0..8 {
             //build vec of squares and convert to array
             let mut uninit_col_array: [MaybeUninit<Square>; 8] = [MaybeUninit::uninit(); 8];
 
             for row in 0..8 {
-                let coord = Coordinate { row, col };
+                let coord = Coordinate::new(col, row);
                 locations.push(coord);
                 //get square color
                 let color = coord.color().unwrap_or(Color::White);
@@ -308,7 +306,7 @@ impl Board {
 
             unsafe {
                 let col_array = mem::transmute::<_, [Square; 8]>(uninit_col_array);
-                uninit_arr[col_num(col)].write(col_array);
+                uninit_arr[col].write(col_array);
             }
         }
 
@@ -327,18 +325,18 @@ impl Board {
 
     pub fn populate_starting_pos(&mut self) {
         //go through each column and put corresponding piece
-        self.populate_column('a', PieceType::Rook);
-        self.populate_column('h', PieceType::Rook);
-        self.populate_column('b', PieceType::Knight);
-        self.populate_column('g', PieceType::Knight);
-        self.populate_column('c', PieceType::Bishop);
-        self.populate_column('f', PieceType::Bishop);
-        self.populate_column('d', PieceType::Queen);
-        self.populate_column('e', PieceType::King);
+        self.populate_column(0, PieceType::Rook);
+        self.populate_column(7, PieceType::Rook);
+        self.populate_column(1, PieceType::Knight);
+        self.populate_column(6, PieceType::Knight);
+        self.populate_column(2, PieceType::Bishop);
+        self.populate_column(5, PieceType::Bishop);
+        self.populate_column(3, PieceType::Queen);
+        self.populate_column(4, PieceType::King);
     }
 
     //this is private because it's just a dependency of populate_starting_pos()
-    fn populate_column(&mut self, col: char, ptype: PieceType) {
+    fn populate_column(&mut self, col: usize, ptype: PieceType) {
         //place non-pawns
         let c = Coordinate::new(col, 0);
         self.put_piece_on(
@@ -381,15 +379,15 @@ impl Board {
     }
 
     pub fn square(&self, coord: &Coordinate) -> &Square {
-        &self.squares[col_num(coord.col)][coord.row]
+        &self.squares[coord.col][coord.row]
     }
 
     pub fn mut_square(&mut self, coord: &Coordinate) -> &mut Square {
-        &mut self.squares[col_num(coord.col)][coord.row]
+        &mut self.squares[coord.col][coord.row]
     }
 
     pub fn remove_on(&mut self, coord: &Coordinate) {
-        self.squares[col_num(coord.col)][coord.row].piece = None;
+        self.squares[coord.col][coord.row].piece = None;
     }
 
     pub fn put_piece_on(&mut self, coord: &Coordinate, mut piece: Piece) {
@@ -447,7 +445,7 @@ impl Board {
                 output.push_str(" | ");
                 //get square, draw, convert to str
                 output.push_str(
-                    self.square(&Coordinate::new(col, row as usize))
+                    self.square(&Coordinate::new(col_num(col), row as usize))
                         .draw()
                         .as_str(),
                 );

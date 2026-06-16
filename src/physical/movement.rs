@@ -208,7 +208,7 @@ impl Action for Castle {
     fn perform_on(&mut self, game: &mut Board) {
         let row = self.row();
 
-        let king_pos = Coordinate::new('e', row);
+        let king_pos = Coordinate::new(4, row);
         let king_target: Coordinate;
         let rook_pos: Coordinate;
         let rook_target: Coordinate;
@@ -216,14 +216,14 @@ impl Action for Castle {
         //Set current locations and target locations
         match self.side {
             CastleSide::KingSide => {
-                king_target = Coordinate::new('g', row);
-                rook_pos = Coordinate::new('h', row);
-                rook_target = Coordinate::new('f', row);
+                king_target = Coordinate::new(6, row);
+                rook_pos = Coordinate::new(7, row);
+                rook_target = Coordinate::new(5, row);
             }
             CastleSide::QueenSide => {
-                king_target = Coordinate::new('c', row);
-                rook_pos = Coordinate::new('a', row);
-                rook_target = Coordinate::new('d', row);
+                king_target = Coordinate::new(2, row);
+                rook_pos = Coordinate::new(0, row);
+                rook_target = Coordinate::new(3, row);
             }
         }
 
@@ -235,7 +235,7 @@ impl Action for Castle {
         let row = self.row();
 
         //do the same thing as above, but reversed.
-        let king_target = Coordinate::new('e', row);
+        let king_target = Coordinate::new(4, row);
         let king_pos: Coordinate;
         let rook_pos: Coordinate;
         let rook_target: Coordinate;
@@ -243,14 +243,14 @@ impl Action for Castle {
         //set current locations and target locations
         match self.side {
             CastleSide::KingSide => {
-                king_pos = Coordinate::new('g', row);
-                rook_target = Coordinate::new('h', row);
-                rook_pos = Coordinate::new('f', row);
+                king_pos = Coordinate::new(6, row);
+                rook_target = Coordinate::new(7, row);
+                rook_pos = Coordinate::new(5, row);
             }
             CastleSide::QueenSide => {
-                king_pos = Coordinate::new('c', row);
-                rook_target = Coordinate::new('a', row);
-                rook_pos = Coordinate::new('d', row);
+                king_pos = Coordinate::new(2, row);
+                rook_target = Coordinate::new(0, row);
+                rook_pos = Coordinate::new(3, row);
             }
         }
 
@@ -322,25 +322,22 @@ impl Piece {
                 coord.row += rise as usize
             };
 
-            let mut col_index = board::col_num(coord.col);
             if run < 0 {
-                if col_index == 0 {
+                if coord.col == 0 {
                     break; //can't subtract from 0
                 }
-                col_index -= (-1 * run) as usize;
+                coord.col -= (-1 * run) as usize;
             } else {
-                col_index += run as usize;
+                coord.col += run as usize;
             }
 
-            if col_index > 7 {
+            if coord.col > 7 {
                 break;
             }
 
             if !coord.is_valid() {
                 break;
             }
-
-            coord.col = board::LETTERS.chars().nth(col_index).unwrap();
 
             let square = game.square(&coord);
 
@@ -382,8 +379,8 @@ mod tests {
 
         //move king to center of board because why not
         let mut m = Move::new(
-            Coordinate::new('e', 0),
-            Coordinate::new('e', 3),
+            Coordinate::new(4, 0),
+            Coordinate::new(4, 3),
             &b,
             None,
             false,
@@ -399,7 +396,7 @@ mod tests {
         //no rook moves at the start
         let b = default_board();
 
-        let c = Coordinate::new('a', 7);
+        let c = Coordinate::new(0, 7);
         let square = b.square(&c);
         let piece = square.piece.unwrap();
         assert_eq!(piece.potential_moves(&b).len(), 0);
