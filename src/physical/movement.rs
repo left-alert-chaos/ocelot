@@ -29,6 +29,7 @@ pub struct Move {
     value: u32,
     promotion: Option<PieceType>,
     captured_type: Option<PieceType>,
+    piece_first_move: bool,
 }
 
 impl fmt::Display for Move {
@@ -50,10 +51,12 @@ impl fmt::Debug for Move {
 impl Action for Move {
     //Doesn't use game.move_from() because it might need to modify the piece before it moves.
     fn perform_on(&mut self, game: &mut Board) {
+        game.round += 1;
         let from_square = game.mut_square(&self.from);
-        let mut moving_piece = from_square.piece.expect(
-            format!("{self} isn't legal because it is from a square without a piece.").as_str(),
-        );
+        let mut moving_piece = from_square.piece.unwrap_or_else(|| {
+            panic!("{self} isn't legal because it is from a square without a piece.")
+        });
+        moving_piece.has_moved = true;
 
         //handle promotion
         if let Some(promo_type) = self.promotion {
@@ -78,16 +81,19 @@ impl Action for Move {
 
     //basically the same logic as perform_on(), but in reverse
     fn undo_on(&self, game: &mut Board) {
+        game.round -= 1;
         let from_square = game.mut_square(&self.to);
-        let mut moving_piece = from_square.piece.expect(
-            format!("Undoing {self} isn't possible because there is no piece on the to square.")
-                .as_str(),
-        );
+        let mut moving_piece = from_square.piece.unwrap_or_else(|| {
+            panic!("Undoing {self} isn't possible because there is no piece on the to square.")
+        });
 
         //handle un-promoting
-        if let Some(_) = self.promotion {
+        if self.promotion.is_some() {
             moving_piece.ptype = PieceType::Pawn;
         }
+
+        //set has_moved
+        moving_piece.has_moved = !self.piece_first_move;
 
         //perform un-move
         game.remove_piece_on(&self.to);
@@ -105,6 +111,7 @@ impl Action for Move {
                     },
                     ptype: PieceType::Pawn,
                     location: ep_loc,
+                    has_moved: false,
                 },
             );
         }
@@ -119,6 +126,7 @@ impl Action for Move {
                 },
                 ptype: captured_type,
                 location: self.to,
+                has_moved: false,
             };
             game.put_piece_on(&self.to, restored_piece);
         }
@@ -141,6 +149,14 @@ impl Move {
             None
         };
 
+        let mut piece_first_move = false;
+        let moving_piece = game.square(&from).piece;
+        if let Some(piece) = moving_piece {
+            piece_first_move = !piece.has_moved;
+        } else {
+            println!("WARNING: Creating move from {from}, which doesn't have a piece.");
+        }
+
         //do a quick-and-dirty evaluation. This is overwritten by search, but useful in some places.
         let value = if let Some(ptype) = promotion {
             ptype.value() - 1
@@ -161,6 +177,7 @@ impl Move {
             value: value as u32,
             promotion,
             captured_type: None,
+            piece_first_move,
         }
     }
 }
@@ -273,19 +290,21 @@ impl Castle {
 }
 
 //seperate impl for move generation
+#[allow(dead_code)]
 impl Piece {
     pub fn potential_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         match self.ptype {
             PieceType::Rook => self.rook_moves(game),
+            PieceType::Knight => self.knight_moves(game),
             PieceType::Bishop => self.bishop_moves(game),
-            PieceType::Queen => { //queen movement is just rook and bishop combined
+            PieceType::Queen => {
+                //queen movement is just rook and bishop combined
                 let mut moves = self.rook_moves(game);
                 moves.append(&mut self.bishop_moves(game));
                 moves
             }
             PieceType::King => self.king_moves(game),
-            PieceType::Knight => self.knight_moves(game),
-            _ => Vec::new(),
+            PieceType::Pawn => self.pawn_moves(game),
         }
     }
 
@@ -307,7 +326,7 @@ impl Piece {
 
     fn king_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         let mut moves: Vec<Box<dyn Action>> = Vec::new();
-        
+
         //castling legality is determined later; for now it's just included
         moves.push(Box::new(Castle::new(CastleSide::KingSide, self.color)));
         moves.push(Box::new(Castle::new(CastleSide::QueenSide, self.color)));
@@ -327,7 +346,7 @@ impl Piece {
 
     fn knight_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         let mut moves: Vec<Box<dyn Action>> = Vec::new();
-        
+
         self.try_square(game, 2, 1, &mut moves);
         self.try_square(game, 1, 2, &mut moves);
         self.try_square(game, -1, 2, &mut moves);
@@ -340,39 +359,104 @@ impl Piece {
         moves
     }
 
+    fn pawn_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
+        let mut moves: Vec<Box<dyn Action>> = Vec::new();
+        //multiplier for movement
+        let direction = self.color.value();
+
+        //forwards movement
+        
+        //move one square
+        let one_square_movement = self.one_square_pawn_movement(game, direction);
+        if let Some(mut pushes) = one_square_movement {
+            moves.append(&mut pushes);
+
+            //could move one, so can move 2
+            if !self.has_moved {
+                if let Some(m) = self.two_square_pawn_movement(game, direction) {
+                    moves.push(Box::new(m));
+                }
+            }
+        }
+
+        moves
+    }
+
+    fn one_square_pawn_movement(&self, game: &Board, direction: i32) -> Option<Vec<Box<dyn Action>>> {
+        let maybe_location = self.location.with_offset(direction, 0);
+        if maybe_location.is_err() { return None; }
+
+        let location = maybe_location.unwrap();
+        if !location.is_valid() { return None; }
+
+        let value = self.square_value(game, &location);
+        if value != Some(0) { return None; }
+
+        let mut moves: Vec<Box<dyn Action>> = Vec::new();
+
+        if location.row == self.pawn_target_rank() {
+            //go through all promotion types
+            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Queen), false)));
+            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Rook), false)));
+            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Bishop), false)));
+            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Knight), false)));
+        } else {
+            moves.push(Box::new(Move::new(self.location, location, game, None, false)));
+        }
+
+        Some(moves)
+    }
+
+    //find two-square move without checking for legality/blocked
+    fn two_square_pawn_movement(&self, game: &Board, direction: i32) -> Option<Move> {
+        let maybe_location = self.location.with_offset(direction * 2, 0);
+        if maybe_location.is_err() {
+            return None;
+        }
+        let location = maybe_location.unwrap();
+        if !location.is_valid() {
+            return None;
+        }
+
+        if self.square_value(game, &location) == Some(0) {
+            return Some(Move::new(self.location, location, game, None, false));
+        }
+
+        None
+    }
+
+    fn pawn_target_rank(&self) -> usize {
+        match self.color {
+            Color::White => 7,
+            Color::Black => 0,
+        }
+    }
+
     fn try_square(&self, game: &Board, rise: i32, run: i32, buffer: &mut Vec<Box<dyn Action>>) {
         //apply movement
-        let mut location = self.location;
-
-        if rise < 0 {
-            let offset = (rise * -1) as usize;
-            
-            //can't leave board
-            if offset > location.row {
-                return;
-            }
-
-            location.row -= (rise * -1) as usize; //convert to positive number and subtract
-        } else {
-            location.row += rise as usize;
+        let location = match self.location.with_offset(rise, run) {
+            Ok(loc) => loc,
+            Err(_) => return,
+        };
+        if !location.is_valid() {
+            return;
         }
-        if run < 0 {
-            let offset = (run * -1) as usize;
 
-            //can't leave board
-            if offset > location.col {
-                return;
-            }
-            location.col -= offset; //convert to positive number and subtract
-        } else {
-            location.col += rise as usize;
+        if location == self.location {
+            println!("Piece::try_square() location and self.location are the same");
         }
 
         //find square value
         let value = self.square_value(game, &location);
-        if let Some(_) = value {
+        if value.is_some() {
             //create move to square
-            buffer.push(Box::new(Move::new(self.location, location, game, None, false)));
+            buffer.push(Box::new(Move::new(
+                self.location,
+                location,
+                game,
+                None,
+                false,
+            )));
         }
     }
 
@@ -390,7 +474,7 @@ impl Piece {
                 if coord.row == 0 {
                     break; //can't subtract from 0
                 }
-                coord.row -= (-1 * rise) as usize;
+                coord.row -= -rise as usize;
             } else {
                 coord.row += rise as usize
             };
@@ -399,7 +483,7 @@ impl Piece {
                 if coord.col == 0 {
                     break; //can't subtract from 0
                 }
-                coord.col -= (-1 * run) as usize;
+                coord.col -= -run as usize;
             } else {
                 coord.col += run as usize;
             }
@@ -419,10 +503,10 @@ impl Piece {
             if let Some(v) = value {
                 moves.push(Box::new(m));
                 if v > 0 {
-                    break
+                    break;
                 }
             } else {
-                break //returned None, so illegal
+                break; //returned None, so illegal
             }
         }
 
@@ -441,6 +525,29 @@ impl Piece {
         } else {
             Some(0)
         }
+    }
+}
+
+//Get moves for players
+impl Board {
+    fn white_potential_moves(&self) -> Vec<Box<dyn Action>> {
+        let mut moves = Vec::new();
+        
+        for piece in self.white_pieces() {
+            moves.append(&mut piece.potential_moves(self));
+        }
+
+        moves
+    }
+    
+    fn black_potential_moves(&self) -> Vec<Box<dyn Action>> {
+        let mut moves = Vec::new();
+
+        for piece in self.black_pieces() {
+            moves.append(&mut piece.potential_moves(self));
+        }
+
+        moves
     }
 }
 
@@ -471,6 +578,9 @@ mod tests {
         );
         m.perform_on(&mut b);
         m.undo_on(&mut b);
+
+        println!("Board after undo:\n{}", b.draw());
+        println!("Backup board:\n{}", backup.draw());
 
         assert_eq!(b, backup);
     }
@@ -504,5 +614,51 @@ mod tests {
         let square = b.square(&c);
         let piece = square.piece.unwrap();
         assert_eq!(piece.potential_moves(&b).len(), 2);
+    }
+
+    #[test]
+    fn thirty_two_locations() {
+        let b = default_board();
+        assert_eq!(b.locations.len(), 32);
+    }
+
+    #[test]
+    //like with king moves, castling is added to be filtered for legality later. that adds 2
+    //elements.
+    fn twenty_two_opening_moves() {
+        let b = default_board();
+        //println!("White moves: {:?}", b.white_potential_moves());
+        assert_eq!(b.white_potential_moves().len(), 22);
+        assert_eq!(b.black_potential_moves().len(), 22);
+    }
+
+    #[test]
+    //returns Some(0) for empty square and None for square occupied by piece of same color
+    fn square_value() {
+        let b = default_board();
+        let p_loc = Coordinate::new(0, 0); //left white rook
+        let enemy_rook_loc = Coordinate::new(0, 7);
+        let enemy_pawn_loc = Coordinate::new(0, 6);
+        let friendly_pawn_loc = Coordinate::new(0, 1);
+        let square = b.square(&p_loc);
+        let piece = square.piece.unwrap();
+        assert_eq!(piece.square_value(&b, &enemy_rook_loc), Some(5));
+        assert_eq!(piece.square_value(&b, &enemy_pawn_loc), Some(1));
+        assert_eq!(piece.square_value(&b, &friendly_pawn_loc), None);
+    }
+
+    #[test]
+    fn eight_knight_moves() {
+        let mut b = Board::new();
+        let c = Coordinate::new(4, 4);
+        let p = Piece {
+            color: Color::White,
+            ptype: PieceType::Knight,
+            location: c,
+            has_moved: false,
+        };
+        b.put_piece_on(&c, p);
+
+        assert_eq!(p.potential_moves(&b).len(), 8);
     }
 }

@@ -103,6 +103,9 @@ impl Color {
 ///
 ///## is_valid(&self) -> bool
 ///Determines whether coordinate fits into an 8 by 8 board
+///
+///## with_offset(&self, rise: i32, run: i32) -> Coordinate
+///Creates a new coordinate a certain number of rows and columns away from self.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Coordinate {
     pub(crate) row: usize,
@@ -118,6 +121,36 @@ impl fmt::Display for Coordinate {
 impl Coordinate {
     pub fn is_valid(&self) -> bool {
         self.row < 8 && self.col < 8
+    }
+
+    pub fn with_offset(&self, rise: i32, run: i32) -> Result<Coordinate, ()> {
+        let mut new = *self;
+
+        if rise < 0 {
+            let offset = -rise as usize;
+
+            //can't leave board
+            if offset > new.row {
+                return Err(());
+            }
+
+            new.row -= offset; //convert to positive number and subtract
+        } else {
+            new.row += rise as usize;
+        }
+        if run < 0 {
+            let offset = -run as usize;
+
+            //can't leave board
+            if offset > new.col {
+                return Err(());
+            }
+            new.col -= offset; //convert to positive number and subtract
+        } else {
+            new.col += run as usize;
+        }
+
+        Ok(new)
     }
 
     fn color(&self) -> Option<Color> {
@@ -192,6 +225,7 @@ pub struct Piece {
     pub(crate) color: Color,
     pub(crate) ptype: PieceType,
     pub(crate) location: Coordinate,
+    pub(crate) has_moved: bool,
 }
 
 impl Piece {
@@ -225,10 +259,15 @@ impl Piece {
 ///## put_piece_on(&'a mut self, col: char, row: usize, piece: Piece<'a>)
 ///Consumes `piece` and puts it on the specified square.
 ///
-///## pieces(&mut self) -> Vec<&Piece<'a>>
+///## pieces(&self) -> Vec<Piece>
 ///Iterates through all squares on board to find pieces.
-///Returns Vec of mutable references to the pieces.
 ///Use sparingly, because it runs in O(n) time.
+///
+///## white_pieces(&self) -> Vec<Piece>
+///Uses pieces() but filters for white pieces.
+///
+///## black_pieces(&self) -> Vec<Piece>
+///Uses pieces() but filters for black pieces.
 ///
 ///## remove_piece_on(&mut self, coord: &Coordinate)
 ///Deletes the piece at the coordinate and removes coordinate from piece locations list.
@@ -236,12 +275,6 @@ impl Piece {
 ///## move_from(&mut self, from: &Coordinate, to: &Coordinate)
 ///Moves the piece on from to the square at to.
 ///Locations are managed automatically.
-///
-///## white_pieces(&mut self) -> Vec<&Piece<'a>>
-///Similar to `pieces()`, but returns only white pieces.
-///
-///## black_pieces(&mut self) -> Vec<&Piece<'a>>
-///Similar to `pieces()`, but returns only black pieces.
 ///
 ///## draw(&self) -> String
 ///Draws a crude ascii board to represent the current position.
@@ -251,6 +284,7 @@ pub struct Board {
     squares: [[Square; 8]; 8],
     pub(crate) locations: Vec<Coordinate>, //stores locations of pieces
     pub(crate) turn: Color,
+    pub(crate) round: i32, //the number of the set of 2 moves
 }
 
 impl fmt::Display for Board {
@@ -262,9 +296,7 @@ impl fmt::Display for Board {
 impl PartialEq for Board {
     //VERY INEFFICENT
     fn eq(&self, other: &Self) -> bool {
-        if self.turn != other.turn {
-            return false;
-        } else if self.squares != other.squares {
+        if self.turn != other.turn || self.squares != other.squares {
             return false;
         } else {
             //search locations
@@ -282,20 +314,18 @@ impl PartialEq for Board {
 impl Board {
     pub fn new() -> Self {
         let mut uninit_arr: [MaybeUninit<[Square; 8]>; 8] = [MaybeUninit::uninit(); 8];
-        let mut locations = Vec::new();
 
-        for col in 0..8 {
+        for (col, col_arr_mem) in uninit_arr.iter_mut().enumerate() {
             //build vec of squares and convert to array
             let mut uninit_col_array: [MaybeUninit<Square>; 8] = [MaybeUninit::uninit(); 8];
 
-            for row in 0..8 {
+            for (row, cell) in uninit_col_array.iter_mut().enumerate() {
                 let coord = Coordinate::new(col, row);
-                locations.push(coord);
                 //get square color
                 let color = coord.color().unwrap_or(Color::White);
 
                 //create square
-                uninit_col_array[row].write(Square {
+                cell.write(Square {
                     location: coord,
                     color,
                     piece: None,
@@ -303,21 +333,23 @@ impl Board {
             }
 
             unsafe {
-                let col_array = mem::transmute::<_, [Square; 8]>(uninit_col_array);
-                uninit_arr[col].write(col_array);
+                let col_array =
+                    mem::transmute::<[MaybeUninit<Square>; 8], [Square; 8]>(uninit_col_array);
+                col_arr_mem.write(col_array);
             }
         }
 
         //convert uninitialized cols into array
         let grid;
         unsafe {
-            grid = mem::transmute::<_, [[Square; 8]; 8]>(uninit_arr);
+            grid = mem::transmute::<[MaybeUninit<[Square; 8]>; 8], [[Square; 8]; 8]>(uninit_arr);
         }
 
         Board {
             squares: grid,
-            locations,
+            locations: Vec::new(),
             turn: Color::White,
+            round: 0,
         }
     }
 
@@ -343,6 +375,7 @@ impl Board {
                 color: Color::White,
                 ptype,
                 location: c,
+                has_moved: false,
             },
         );
         let c = Coordinate::new(col, 7);
@@ -352,6 +385,7 @@ impl Board {
                 color: Color::Black,
                 ptype,
                 location: c,
+                has_moved: false,
             },
         );
 
@@ -363,6 +397,7 @@ impl Board {
                 color: Color::White,
                 ptype: PieceType::Pawn,
                 location: c,
+                has_moved: false,
             },
         );
         let c = Coordinate::new(col, 6);
@@ -372,6 +407,7 @@ impl Board {
                 color: Color::Black,
                 ptype: PieceType::Pawn,
                 location: c,
+                has_moved: false,
             },
         );
     }
@@ -403,10 +439,10 @@ impl Board {
 
     pub fn move_from(&mut self, from: &Coordinate, to: &Coordinate) {
         let from_square = self.mut_square(from);
-        let moving_piece = from_square.piece.expect(
-            format!("Moving from {from} to {to} isn't possible because there is no piece to move.")
-                .as_str(),
-        );
+        let mut moving_piece = from_square.piece.unwrap_or_else(|| {
+            panic!("Moving from {from} to {to} isn't possible because there is no piece to move.")
+        });
+        moving_piece.has_moved = true;
 
         self.remove_on(from);
         self.put_piece_on(to, moving_piece);
@@ -414,7 +450,7 @@ impl Board {
 
     ///Keep in mind that `pieces()` returns *copies* of pieces on the board, not the pieces
     ///themselves.
-    pub fn pieces(&mut self) -> Vec<Piece> {
+    pub fn pieces(&self) -> Vec<Piece> {
         let mut pieces = Vec::new();
 
         for loc in self.locations.iter() {
@@ -430,8 +466,20 @@ impl Board {
         pieces
     }
 
+    pub fn white_pieces(&self) -> Vec<Piece> {
+        let mut pieces = self.pieces();
+        pieces.retain(|p| p.color == Color::White);
+        pieces
+    }
+
+    pub fn black_pieces(&self) -> Vec<Piece> {
+        let mut pieces = self.pieces();
+        pieces.retain(|p| p.color == Color::Black);
+        pieces
+    }
+
     pub fn draw(&self) -> String {
-        let mut output = String::from("    a    b    c    d    e    f    g    h");
+        let mut output = String::from("     a    b    c    d    e    f    g    h");
 
         //don't use for loop because decreasing ranges are hard
         let mut row: i32 = 7;
@@ -462,5 +510,38 @@ pub fn col_num(name: char) -> usize {
         num
     } else {
         panic!("Column {name} doesn't exist!");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    fn default_board() -> Board {
+        let mut b = Board::new();
+        b.populate_starting_pos();
+        b
+    }
+
+    #[test]
+    fn positive_offset() {
+        let c = Coordinate::new(5, 5);
+        let new = c.with_offset(1, 1);
+        assert_eq!(new, Ok(Coordinate::new(6, 6)));
+    }
+
+    #[test]
+    fn negative_offset() {
+        let c = Coordinate::new(5, 5);
+        let new = c.with_offset(-5, -5);
+        assert_eq!(new, Ok(Coordinate::new(0, 0)));
+    }
+
+    #[test]
+    fn num_of_pieces() {
+        let b = default_board();
+        assert_eq!(b.pieces().len(), 32);
+        assert_eq!(b.white_pieces().len(), 16);
+        assert_eq!(b.black_pieces().len(), 16);
     }
 }
