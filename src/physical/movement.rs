@@ -69,6 +69,23 @@ impl Action for Move {
             self.captured_type = Some(captured_piece.ptype);
         }
 
+        //increment round
+        game.turn = moving_piece.color.opposite();
+        if game.turn == Color::White {
+            game.round += 1;
+        }
+
+        //if is 2 square pawn move, set en passant-ability
+        if moving_piece.ptype.value() == 1 && self.is_two_square_pawn_move() {
+            //if white, black captures on same turn. If black, white captures next round
+            let turn = if moving_piece.color == Color::White {
+                game.round
+            } else {
+                game.round + 1
+            };
+            moving_piece.ptype = PieceType::Pawn(turn);
+        }
+
         //perform move
         game.remove_piece_on(&self.from);
         game.put_piece_on(&self.to, moving_piece);
@@ -89,11 +106,22 @@ impl Action for Move {
 
         //handle un-promoting
         if self.promotion.is_some() {
-            moving_piece.ptype = PieceType::Pawn;
+            moving_piece.ptype = PieceType::Pawn(0); //promotion doesn't matter; just use garbage.
         }
 
         //set has_moved
         moving_piece.has_moved = !self.piece_first_move;
+
+        //if is 2 square pawn move, set en passant-ability
+        if moving_piece.ptype.value() == 1 && self.is_two_square_pawn_move() {
+            moving_piece.ptype = PieceType::Pawn(0);
+        }
+
+        //de-increment round
+        game.turn = game.turn.opposite();
+        if game.turn == Color::Black {
+            game.round -= 1;
+        }
 
         //perform un-move
         game.remove_piece_on(&self.to);
@@ -109,7 +137,7 @@ impl Action for Move {
                     } else {
                         Color::White
                     },
-                    ptype: PieceType::Pawn,
+                    ptype: PieceType::Pawn(game.round),
                     location: ep_loc,
                     has_moved: false,
                 },
@@ -144,7 +172,7 @@ impl Move {
         let en_passant_location = if en_passant {
             //direction of en passant, NOT pawn movement direction.
             let direction: i32 = if from.row < to.row { -1 } else { 1 };
-            Some(Coordinate::new(to.col, to.row + direction as usize))
+            to.with_offset(direction, 0).ok()
         } else {
             None
         };
@@ -179,6 +207,13 @@ impl Move {
             captured_type: None,
             piece_first_move,
         }
+    }
+
+    fn is_two_square_pawn_move(&self) -> bool {
+        let mut rise = self.to.row as i32 - self.from.row as i32;
+        rise = rise.abs();
+
+        rise == 2
     }
 }
 
@@ -304,7 +339,7 @@ impl Piece {
                 moves
             }
             PieceType::King => self.king_moves(game),
-            PieceType::Pawn => self.pawn_moves(game),
+            PieceType::Pawn(_) => self.pawn_moves(game),
         }
     }
 
@@ -364,44 +399,136 @@ impl Piece {
         //multiplier for movement
         let direction = self.color.value();
 
-        //forwards movement
-        
         //move one square
         let one_square_movement = self.one_square_pawn_movement(game, direction);
         if let Some(mut pushes) = one_square_movement {
             moves.append(&mut pushes);
 
             //could move one, so can move 2
-            if !self.has_moved {
-                if let Some(m) = self.two_square_pawn_movement(game, direction) {
-                    moves.push(Box::new(m));
-                }
+            if !self.has_moved
+                && let Some(m) = self.two_square_pawn_movement(game, direction)
+            {
+                moves.push(Box::new(m));
             }
         }
+
+        self.pawn_capture(direction, 1, game, &mut moves);
+        self.pawn_capture(direction, -1, game, &mut moves);
+
+        //TODO: CHECK FOR EN PASSANT LEGALITY BY SEEING IF NEIGHBORING PAWNS' PTYPE VALUES ARE EQUAL
+        //TO GAME.ROUND
+
+        self.try_en_passant(direction, 1, game, &mut moves);
+        self.try_en_passant(direction, -1, game, &mut moves);
 
         moves
     }
 
-    fn one_square_pawn_movement(&self, game: &Board, direction: i32) -> Option<Vec<Box<dyn Action>>> {
+    fn try_en_passant(&self, rise: i32, run: i32, game: &Board, buffer: &mut Vec<Box<dyn Action>>) {
+        let neighbor_loc = match self.location.with_offset(0, run) {
+            Ok(loc) => loc,
+            Err(_) => return,
+        };
+
+        //get piece at loc
+        let piece = match game.square(&neighbor_loc).piece {
+            Some(piece) => piece,
+            None => return,
+        };
+
+        //determine if en passantable
+        if piece.ptype == board::PieceType::Pawn(game.round) && piece.color != self.color {
+            //possible!
+            let en_passant_location = match self.location.with_offset(rise, run) {
+                Ok(loc) => loc,
+                Err(_) => return,
+            };
+            buffer.push(Box::new(Move::new(
+                self.location,
+                en_passant_location,
+                game,
+                None,
+                true,
+            )));
+        }
+    }
+
+    fn pawn_capture(&self, rise: i32, run: i32, game: &Board, buffer: &mut Vec<Box<dyn Action>>) {
+        let maybe_loc = self.location.with_offset(rise, run);
+        if maybe_loc.is_err() {
+            return;
+        }
+        let loc = maybe_loc.unwrap();
+
+        if loc.row == self.pawn_target_rank() {
+            //all promotion types
+            self.only_captures(game, &loc, Some(board::PieceType::Queen), buffer);
+            self.only_captures(game, &loc, Some(board::PieceType::Rook), buffer);
+            self.only_captures(game, &loc, Some(board::PieceType::Bishop), buffer);
+            self.only_captures(game, &loc, Some(board::PieceType::Knight), buffer);
+        } else {
+            //only capture
+            self.only_captures(game, &loc, None, buffer);
+        }
+    }
+
+    fn one_square_pawn_movement(
+        &self,
+        game: &Board,
+        direction: i32,
+    ) -> Option<Vec<Box<dyn Action>>> {
         let maybe_location = self.location.with_offset(direction, 0);
-        if maybe_location.is_err() { return None; }
+        if maybe_location.is_err() {
+            return None;
+        }
 
         let location = maybe_location.unwrap();
-        if !location.is_valid() { return None; }
 
         let value = self.square_value(game, &location);
-        if value != Some(0) { return None; }
+        if value != Some(0) {
+            return None;
+        }
 
         let mut moves: Vec<Box<dyn Action>> = Vec::new();
 
         if location.row == self.pawn_target_rank() {
             //go through all promotion types
-            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Queen), false)));
-            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Rook), false)));
-            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Bishop), false)));
-            moves.push(Box::new(Move::new(self.location, location, game, Some(board::PieceType::Knight), false)));
+            moves.push(Box::new(Move::new(
+                self.location,
+                location,
+                game,
+                Some(board::PieceType::Queen),
+                false,
+            )));
+            moves.push(Box::new(Move::new(
+                self.location,
+                location,
+                game,
+                Some(board::PieceType::Rook),
+                false,
+            )));
+            moves.push(Box::new(Move::new(
+                self.location,
+                location,
+                game,
+                Some(board::PieceType::Bishop),
+                false,
+            )));
+            moves.push(Box::new(Move::new(
+                self.location,
+                location,
+                game,
+                Some(board::PieceType::Knight),
+                false,
+            )));
         } else {
-            moves.push(Box::new(Move::new(self.location, location, game, None, false)));
+            moves.push(Box::new(Move::new(
+                self.location,
+                location,
+                game,
+                None,
+                false,
+            )));
         }
 
         Some(moves)
@@ -409,14 +536,10 @@ impl Piece {
 
     //find two-square move without checking for legality/blocked
     fn two_square_pawn_movement(&self, game: &Board, direction: i32) -> Option<Move> {
-        let maybe_location = self.location.with_offset(direction * 2, 0);
-        if maybe_location.is_err() {
-            return None;
-        }
-        let location = maybe_location.unwrap();
-        if !location.is_valid() {
-            return None;
-        }
+        let location = match self.location.with_offset(direction * 2, 0) {
+            Ok(loc) => loc,
+            Err(_) => return None,
+        };
 
         if self.square_value(game, &location) == Some(0) {
             return Some(Move::new(self.location, location, game, None, false));
@@ -432,19 +555,32 @@ impl Piece {
         }
     }
 
+    //like try_square(), but only works if there's a capture
+    fn only_captures(
+        &self,
+        game: &Board,
+        location: &Coordinate,
+        promotion: Option<PieceType>,
+        buffer: &mut Vec<Box<dyn Action>>,
+    ) {
+        let value = self.square_value(game, location);
+        if value.is_some_and(|x| x != 0) {
+            buffer.push(Box::new(Move::new(
+                self.location,
+                *location,
+                game,
+                promotion,
+                false,
+            )));
+        }
+    }
+
     fn try_square(&self, game: &Board, rise: i32, run: i32, buffer: &mut Vec<Box<dyn Action>>) {
         //apply movement
         let location = match self.location.with_offset(rise, run) {
             Ok(loc) => loc,
             Err(_) => return,
         };
-        if !location.is_valid() {
-            return;
-        }
-
-        if location == self.location {
-            println!("Piece::try_square() location and self.location are the same");
-        }
 
         //find square value
         let value = self.square_value(game, &location);
@@ -532,14 +668,14 @@ impl Piece {
 impl Board {
     fn white_potential_moves(&self) -> Vec<Box<dyn Action>> {
         let mut moves = Vec::new();
-        
+
         for piece in self.white_pieces() {
             moves.append(&mut piece.potential_moves(self));
         }
 
         moves
     }
-    
+
     fn black_potential_moves(&self) -> Vec<Box<dyn Action>> {
         let mut moves = Vec::new();
 
@@ -579,8 +715,10 @@ mod tests {
         m.perform_on(&mut b);
         m.undo_on(&mut b);
 
-        println!("Board after undo:\n{}", b.draw());
-        println!("Backup board:\n{}", backup.draw());
+        println!("backup turn: {}", backup.turn);
+        println!("real turn: {}", b.turn);
+        println!("backup round: {}", backup.round);
+        println!("real round: {}", b.round);
 
         assert_eq!(b, backup);
     }
@@ -660,5 +798,71 @@ mod tests {
         b.put_piece_on(&c, p);
 
         assert_eq!(p.potential_moves(&b).len(), 8);
+    }
+
+    #[test]
+    fn pawn_captures_and_promotes() {
+        let mut b = Board::new();
+        let pawn_loc = Coordinate::new(0, 6);
+        let rook_loc = Coordinate::new(1, 7);
+        let pawn = Piece {
+            color: Color::White,
+            ptype: board::PieceType::Pawn(0),
+            location: pawn_loc,
+            has_moved: true,
+        };
+        let rook = Piece {
+            color: Color::Black,
+            ptype: board::PieceType::Rook,
+            location: rook_loc,
+            has_moved: true,
+        };
+        b.put_piece_on(&pawn_loc, pawn);
+        b.put_piece_on(&rook_loc, rook);
+        assert_eq!(pawn.potential_moves(&b).len(), 8);
+    }
+
+    #[test]
+    fn pawn_captures() {
+        let mut b = Board::new();
+        let pawn_loc = Coordinate::new(0, 6);
+        let rook_loc = Coordinate::new(1, 5);
+        let pawn = Piece {
+            color: Color::Black,
+            ptype: board::PieceType::Pawn(0),
+            location: pawn_loc,
+            has_moved: false,
+        };
+        let rook = Piece {
+            color: Color::White,
+            ptype: board::PieceType::Rook,
+            location: rook_loc,
+            has_moved: true,
+        };
+        b.put_piece_on(&pawn_loc, pawn);
+        b.put_piece_on(&rook_loc, rook);
+        assert_eq!(pawn.potential_moves(&b).len(), 3);
+    }
+
+    #[test]
+    fn en_passant() {
+        let mut b = Board::new();
+        let jumping_pawn_loc = Coordinate::new(1, 4);
+        let capture_pawn_loc = Coordinate::new(0, 4);
+        let jumping_pawn = Piece {
+            color: Color::Black,
+            ptype: board::PieceType::Pawn(1),
+            location: jumping_pawn_loc,
+            has_moved: true,
+        };
+        let capture_pawn = Piece {
+            color: Color::White,
+            ptype: board::PieceType::Pawn(0),
+            location: capture_pawn_loc,
+            has_moved: true,
+        };
+        b.put_piece_on(&jumping_pawn_loc, jumping_pawn);
+        b.put_piece_on(&capture_pawn_loc, capture_pawn);
+        assert_eq!(capture_pawn.potential_moves(&b).len(), 2);
     }
 }

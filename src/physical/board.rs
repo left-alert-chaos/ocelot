@@ -18,7 +18,7 @@ pub const LETTERS: &str = "abcdefgh";
 ///Returns the value of a piece (1, 3, 5, 9, 50)
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PieceType {
-    Pawn,
+    Pawn(i32), //store turn pawn can be en passant'd on.
     Knight,
     Bishop,
     Rook,
@@ -29,7 +29,7 @@ pub enum PieceType {
 impl PieceType {
     pub fn value(&self) -> i32 {
         match self {
-            PieceType::Pawn => 1,
+            PieceType::Pawn(_) => 1,
             PieceType::Knight => 3,
             PieceType::Bishop => 3,
             PieceType::Rook => 5,
@@ -40,7 +40,7 @@ impl PieceType {
 
     fn letter(&self) -> char {
         match self {
-            PieceType::Pawn => 'p',
+            PieceType::Pawn(_) => 'p',
             PieceType::Knight => 'n',
             PieceType::Bishop => 'b',
             PieceType::Rook => 'r',
@@ -57,6 +57,9 @@ impl PieceType {
 ///
 ///## value(&self) -> i32
 ///returns 1 for White and -1 for Black
+///
+///## opposite(&self) -> Self
+///If self is white, return black. If self is black, return white.
 #[derive(Eq, PartialEq, Clone, Default, Copy)]
 pub enum Color {
     #[default]
@@ -85,6 +88,13 @@ impl Color {
         match self {
             Color::White => 1,
             Color::Black => -1,
+        }
+    }
+
+    pub fn opposite(&self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
         }
     }
 
@@ -150,7 +160,7 @@ impl Coordinate {
             new.col += run as usize;
         }
 
-        Ok(new)
+        if new.is_valid() { Ok(new) } else { Err(()) }
     }
 
     fn color(&self) -> Option<Color> {
@@ -349,7 +359,7 @@ impl Board {
             squares: grid,
             locations: Vec::new(),
             turn: Color::White,
-            round: 0,
+            round: 1, //not 0-indexed; 0 is used to signal "never" or a turn that is impossible
         }
     }
 
@@ -395,7 +405,7 @@ impl Board {
             &c,
             Piece {
                 color: Color::White,
-                ptype: PieceType::Pawn,
+                ptype: PieceType::Pawn(0),
                 location: c,
                 has_moved: false,
             },
@@ -405,7 +415,7 @@ impl Board {
             &c,
             Piece {
                 color: Color::Black,
-                ptype: PieceType::Pawn,
+                ptype: PieceType::Pawn(0),
                 location: c,
                 has_moved: false,
             },
@@ -516,7 +526,7 @@ pub fn col_num(name: char) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     fn default_board() -> Board {
         let mut b = Board::new();
         b.populate_starting_pos();
