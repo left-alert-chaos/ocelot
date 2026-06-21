@@ -6,6 +6,7 @@
 
 use std::fmt;
 use std::mem::{self, MaybeUninit};
+use crate::physical::movement::MoveInfo;
 
 pub const LETTERS: &str = "abcdefgh";
 

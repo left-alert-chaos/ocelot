@@ -2,13 +2,14 @@
 //!Handles impls for piece movement, move generation, legality checking, etc.
 
 use crate::physical::board;
-use board::{Board, Color, Coordinate, Piece, PieceType};
+use board::{Board, Coordinate, Piece};
 use std::fmt;
 
 pub trait Action: fmt::Debug {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
+    fn from_coordinate(&self) -> Option<Coordinate>;
     fn _is_illegal(&self, _game: &Board) -> bool {
         false
     }
@@ -20,15 +21,15 @@ pub trait Action: fmt::Debug {
 ///# Public Methods
 ///
 ///## new(from: Coordinate, to: board::Coordinate, en_passant: Option<board::Coordinate>,
-///value: u32, promotion: Option<PieceType>)
+///value: u32, promotion: Option<board::PieceType>)
 #[derive(Copy, Clone)]
 pub struct Move {
     from: Coordinate,
     to: Coordinate,
     en_passant: Option<Coordinate>,
     value: u32,
-    promotion: Option<PieceType>,
-    captured_type: Option<PieceType>,
+    promotion: Option<board::PieceType>,
+    captured_type: Option<board::PieceType>,
     piece_first_move: bool,
 }
 
@@ -49,6 +50,10 @@ impl fmt::Debug for Move {
 }
 
 impl Action for Move {
+    fn from_coordinate(&self) -> Option<Coordinate> {
+        Some(self.from)
+    }
+
     //Doesn't use game.move_from() because it might need to modify the piece before it moves.
     fn perform_on(&mut self, game: &mut Board) {
         game.round += 1;
@@ -71,19 +76,19 @@ impl Action for Move {
 
         //increment round
         game.turn = moving_piece.color.opposite();
-        if game.turn == Color::White {
+        if game.turn == board::Color::White {
             game.round += 1;
         }
 
         //if is 2 square pawn move, set en passant-ability
         if moving_piece.ptype.value() == 1 && self.is_two_square_pawn_move() {
             //if white, black captures on same turn. If black, white captures next round
-            let turn = if moving_piece.color == Color::White {
+            let turn = if moving_piece.color == board::Color::White {
                 game.round
             } else {
                 game.round + 1
             };
-            moving_piece.ptype = PieceType::Pawn(turn);
+            moving_piece.ptype = board::PieceType::Pawn(turn);
         }
 
         //perform move
@@ -106,7 +111,7 @@ impl Action for Move {
 
         //handle un-promoting
         if self.promotion.is_some() {
-            moving_piece.ptype = PieceType::Pawn(0); //promotion doesn't matter; just use garbage.
+            moving_piece.ptype = board::PieceType::Pawn(0); //promotion doesn't matter; just use garbage.
         }
 
         //set has_moved
@@ -114,12 +119,12 @@ impl Action for Move {
 
         //if is 2 square pawn move, set en passant-ability
         if moving_piece.ptype.value() == 1 && self.is_two_square_pawn_move() {
-            moving_piece.ptype = PieceType::Pawn(0);
+            moving_piece.ptype = board::PieceType::Pawn(0);
         }
 
         //de-increment round
         game.turn = game.turn.opposite();
-        if game.turn == Color::Black {
+        if game.turn == board::Color::Black {
             game.round -= 1;
         }
 
@@ -132,12 +137,12 @@ impl Action for Move {
             game.put_piece_on(
                 &ep_loc,
                 Piece {
-                    color: if moving_piece.color == Color::White {
-                        Color::Black
+                    color: if moving_piece.color == board::Color::White {
+                        board::Color::Black
                     } else {
-                        Color::White
+                        board::Color::White
                     },
-                    ptype: PieceType::Pawn(game.round),
+                    ptype: board::PieceType::Pawn(game.round),
                     location: ep_loc,
                     has_moved: false,
                 },
@@ -147,10 +152,10 @@ impl Action for Move {
         //restore capture
         if let Some(captured_type) = self.captured_type {
             let restored_piece = Piece {
-                color: if moving_piece.color == Color::White {
-                    Color::Black
+                color: if moving_piece.color == board::Color::White {
+                    board::Color::Black
                 } else {
-                    Color::White
+                    board::Color::White
                 },
                 ptype: captured_type,
                 location: self.to,
@@ -166,7 +171,7 @@ impl Move {
         from: Coordinate,
         to: board::Coordinate,
         game: &Board,
-        promotion: Option<PieceType>,
+        promotion: Option<board::PieceType>,
         en_passant: bool,
     ) -> Self {
         let en_passant_location = if en_passant {
@@ -217,6 +222,7 @@ impl Move {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum CastleSide {
     KingSide,
     QueenSide,
@@ -237,11 +243,12 @@ impl fmt::Display for CastleSide {
 ///
 ///# Public Methods
 ///
-///## new(side: CastleSide, player: Color) -> Self
+///## new(side: CastleSide, player: board::Color) -> Self
 ///Simple abstraction to functionally instantiate the struct.
+#[derive(Clone, Copy)]
 pub struct Castle {
     side: CastleSide,
-    player: Color,
+    player: board::Color,
 }
 
 impl fmt::Display for Castle {
@@ -257,6 +264,10 @@ impl fmt::Debug for Castle {
 }
 
 impl Action for Castle {
+    fn from_coordinate(&self) -> Option<Coordinate> {
+        None
+    }
+
     fn perform_on(&mut self, game: &mut Board) {
         let row = self.row();
 
@@ -312,14 +323,62 @@ impl Action for Castle {
 }
 
 impl Castle {
-    pub fn new(side: CastleSide, player: Color) -> Self {
+    pub fn new(side: CastleSide, player: board::Color) -> Self {
         Castle { side, player }
     }
 
     fn row(&self) -> usize {
         match self.player {
-            Color::White => 0,
-            Color::Black => 7,
+            board::Color::White => 0,
+            board::Color::Black => 7,
+        }
+    }
+}
+
+///# MoveInfo
+///Holds information about threatened squares, legal moves, etc. It exists to remove the need for
+///generating moves more times than necessary.
+///
+///# Public Methods
+///
+///## new() -> Self
+///Creates a new instance with empty Vecs in its fields.
+///
+///## update(&mut self, game: &board::Board)
+///Generates moves for game and updates self's fields with info.
+pub struct MoveInfo {
+    pub(crate) white_threatened_squares: Vec<Coordinate>,
+    pub(crate) black_threatened_squares: Vec<Coordinate>,
+    pub(crate) white_potential_moves: Vec<Box<dyn Action>>,
+    pub(crate) black_potential_moves: Vec<Box<dyn Action>>,
+}
+
+impl MoveInfo {
+    pub fn new() -> Self {
+        Self {
+            white_threatened_squares: Vec::new(),
+            black_threatened_squares: Vec::new(),
+            white_potential_moves: Vec::new(),
+            black_potential_moves: Vec::new(),
+        }
+    }
+
+    pub fn update(&mut self, game: &Board) {
+        let white_potential_moves = game.white_potential_moves();
+        let black_potential_moves = game.black_potential_moves();
+        
+        self.white_threatened_squares = Vec::new();
+        for m in white_potential_moves {
+            if let Some(coord) = m.from_coordinate() {
+                self.white_threatened_squares.push(coord);
+            }
+        }
+
+        self.black_threatened_squares = Vec::new();
+        for m in black_potential_moves {
+            if let Some(coord) = m.from_coordinate() {
+                self.black_threatened_squares.push(coord);
+            }
         }
     }
 }
@@ -329,17 +388,17 @@ impl Castle {
 impl Piece {
     pub fn potential_moves(&self, game: &Board) -> Vec<Box<dyn Action>> {
         match self.ptype {
-            PieceType::Rook => self.rook_moves(game),
-            PieceType::Knight => self.knight_moves(game),
-            PieceType::Bishop => self.bishop_moves(game),
-            PieceType::Queen => {
+            board::PieceType::Rook => self.rook_moves(game),
+            board::PieceType::Knight => self.knight_moves(game),
+            board::PieceType::Bishop => self.bishop_moves(game),
+            board::PieceType::Queen => {
                 //queen movement is just rook and bishop combined
                 let mut moves = self.rook_moves(game);
                 moves.append(&mut self.bishop_moves(game));
                 moves
             }
-            PieceType::King => self.king_moves(game),
-            PieceType::Pawn(_) => self.pawn_moves(game),
+            board::PieceType::King => self.king_moves(game),
+            board::PieceType::Pawn(_) => self.pawn_moves(game),
         }
     }
 
@@ -414,9 +473,6 @@ impl Piece {
 
         self.pawn_capture(direction, 1, game, &mut moves);
         self.pawn_capture(direction, -1, game, &mut moves);
-
-        //TODO: CHECK FOR EN PASSANT LEGALITY BY SEEING IF NEIGHBORING PAWNS' PTYPE VALUES ARE EQUAL
-        //TO GAME.ROUND
 
         self.try_en_passant(direction, 1, game, &mut moves);
         self.try_en_passant(direction, -1, game, &mut moves);
@@ -550,8 +606,8 @@ impl Piece {
 
     fn pawn_target_rank(&self) -> usize {
         match self.color {
-            Color::White => 7,
-            Color::Black => 0,
+            board::Color::White => 7,
+            board::Color::Black => 0,
         }
     }
 
@@ -560,7 +616,7 @@ impl Piece {
         &self,
         game: &Board,
         location: &Coordinate,
-        promotion: Option<PieceType>,
+        promotion: Option<board::PieceType>,
         buffer: &mut Vec<Box<dyn Action>>,
     ) {
         let value = self.square_value(game, location);
@@ -790,8 +846,8 @@ mod tests {
         let mut b = Board::new();
         let c = Coordinate::new(4, 4);
         let p = Piece {
-            color: Color::White,
-            ptype: PieceType::Knight,
+            color: board::Color::White,
+            ptype: board::PieceType::Knight,
             location: c,
             has_moved: false,
         };
@@ -806,13 +862,13 @@ mod tests {
         let pawn_loc = Coordinate::new(0, 6);
         let rook_loc = Coordinate::new(1, 7);
         let pawn = Piece {
-            color: Color::White,
+            color: board::Color::White,
             ptype: board::PieceType::Pawn(0),
             location: pawn_loc,
             has_moved: true,
         };
         let rook = Piece {
-            color: Color::Black,
+            color: board::Color::Black,
             ptype: board::PieceType::Rook,
             location: rook_loc,
             has_moved: true,
@@ -828,13 +884,13 @@ mod tests {
         let pawn_loc = Coordinate::new(0, 6);
         let rook_loc = Coordinate::new(1, 5);
         let pawn = Piece {
-            color: Color::Black,
+            color: board::Color::Black,
             ptype: board::PieceType::Pawn(0),
             location: pawn_loc,
             has_moved: false,
         };
         let rook = Piece {
-            color: Color::White,
+            color: board::Color::White,
             ptype: board::PieceType::Rook,
             location: rook_loc,
             has_moved: true,
@@ -850,13 +906,13 @@ mod tests {
         let jumping_pawn_loc = Coordinate::new(1, 4);
         let capture_pawn_loc = Coordinate::new(0, 4);
         let jumping_pawn = Piece {
-            color: Color::Black,
+            color: board::Color::Black,
             ptype: board::PieceType::Pawn(1),
             location: jumping_pawn_loc,
             has_moved: true,
         };
         let capture_pawn = Piece {
-            color: Color::White,
+            color: board::Color::White,
             ptype: board::PieceType::Pawn(0),
             location: capture_pawn_loc,
             has_moved: true,
