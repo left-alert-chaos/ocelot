@@ -4,9 +4,9 @@
 //!As a reminder, all row numbers are 0-indexed; what GothamChess would call a8 is a7 here, and a1
 //!is a0.
 
+use crate::physical::movement::MoveInfo;
 use std::fmt;
 use std::mem::{self, MaybeUninit};
-use crate::physical::movement::MoveInfo;
 
 pub const LETTERS: &str = "abcdefgh";
 
@@ -280,6 +280,9 @@ impl Piece {
 ///## black_pieces(&self) -> Vec<Piece>
 ///Uses pieces() but filters for black pieces.
 ///
+///## is_check(&self, player: Color) -> bool
+///Is player's king threatened?
+///
 ///## remove_piece_on(&mut self, coord: &Coordinate)
 ///Deletes the piece at the coordinate and removes coordinate from piece locations list.
 ///
@@ -290,12 +293,16 @@ impl Piece {
 ///## draw(&self) -> String
 ///Draws a crude ascii board to represent the current position.
 ///The fmt::Display implementation uses draw().
-#[derive(Debug, Clone, Eq)]
+///
+///## update(&mut self)
+///Replaces move_info field with up-to-date one.
+#[derive(Debug)]
 pub struct Board {
     squares: [[Square; 8]; 8],
     pub(crate) locations: Vec<Coordinate>, //stores locations of pieces
     pub(crate) turn: Color,
     pub(crate) round: i32, //the number of the set of 2 moves
+    pub(crate) move_info: MoveInfo,
 }
 
 impl fmt::Display for Board {
@@ -361,6 +368,7 @@ impl Board {
             locations: Vec::new(),
             turn: Color::White,
             round: 1, //not 0-indexed; 0 is used to signal "never" or a turn that is impossible
+            move_info: MoveInfo::new(),
         }
     }
 

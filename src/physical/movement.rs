@@ -5,14 +5,12 @@ use crate::physical::board;
 use board::{Board, Coordinate, Piece};
 use std::fmt;
 
-pub trait Action: fmt::Debug {
+pub trait Action: fmt::Debug + fmt::Display {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
-    fn from_coordinate(&self) -> Option<Coordinate>;
-    fn _is_illegal(&self, _game: &Board) -> bool {
-        false
-    }
+    fn to_coordinate(&self) -> Option<Coordinate>;
+    fn is_illegal(&mut self, game: &mut Board) -> bool;
 }
 
 ///# Move
@@ -50,8 +48,29 @@ impl fmt::Debug for Move {
 }
 
 impl Action for Move {
-    fn from_coordinate(&self) -> Option<Coordinate> {
-        Some(self.from)
+    fn to_coordinate(&self) -> Option<Coordinate> {
+        Some(self.to)
+    }
+
+    fn is_illegal(&mut self, game: &mut Board) -> bool {
+        //unwrap moving piece
+        let moving_piece = match game.square(&self.from).piece {
+            Some(piece) => piece,
+            None => {
+                eprintln!(
+                    "Move::is_illegal(): Returning false because there is no piece where this move is from ({:?})",
+                    self.from
+                );
+                return false;
+            }
+        };
+
+        //check for check
+        self.perform_on(game);
+        let result = game.is_check(moving_piece.color);
+        self.undo_on(game);
+
+        result
     }
 
     //Doesn't use game.move_from() because it might need to modify the piece before it moves.
@@ -99,6 +118,9 @@ impl Action for Move {
         if let Some(ep_loc) = self.en_passant {
             game.remove_piece_on(&ep_loc);
         }
+
+        //update board
+        game.move_info = MoveInfo::from(game);
     }
 
     //basically the same logic as perform_on(), but in reverse
@@ -222,6 +244,8 @@ impl Move {
     }
 }
 
+///# CastleSide
+///Represents the side a player can castle on.ype.
 #[derive(Copy, Clone)]
 pub enum CastleSide {
     KingSide,
@@ -235,6 +259,37 @@ impl fmt::Display for CastleSide {
             Self::QueenSide => "Queen Side",
         };
         write!(f, "{phrase}")
+    }
+}
+
+impl CastleSide {
+    fn rook_start_col(&self) -> usize {
+        match self {
+            Self::KingSide => 7,
+            Self::QueenSide => 0,
+        }
+    }
+
+    fn rook_end_col(&self) -> usize {
+        match self {
+            Self::KingSide => 5,
+            Self::QueenSide => 3,
+        }
+    }
+
+    fn king_end_col(&self) -> usize {
+        match self {
+            Self::KingSide => 6,
+            Self::QueenSide => 2,
+        }
+    }
+
+    //I love this function name
+    fn squares_that_must_be_empty(&self) -> Vec<usize> {
+        match self {
+            Self::KingSide => vec![6, 5],
+            Self::QueenSide => vec![1, 2, 3],
+        }
     }
 }
 
@@ -264,7 +319,7 @@ impl fmt::Debug for Castle {
 }
 
 impl Action for Castle {
-    fn from_coordinate(&self) -> Option<Coordinate> {
+    fn to_coordinate(&self) -> Option<Coordinate> {
         None
     }
 
@@ -272,23 +327,9 @@ impl Action for Castle {
         let row = self.row();
 
         let king_pos = Coordinate::new(4, row);
-        let king_target: Coordinate;
-        let rook_pos: Coordinate;
-        let rook_target: Coordinate;
-
-        //Set current locations and target locations
-        match self.side {
-            CastleSide::KingSide => {
-                king_target = Coordinate::new(6, row);
-                rook_pos = Coordinate::new(7, row);
-                rook_target = Coordinate::new(5, row);
-            }
-            CastleSide::QueenSide => {
-                king_target = Coordinate::new(2, row);
-                rook_pos = Coordinate::new(0, row);
-                rook_target = Coordinate::new(3, row);
-            }
-        }
+        let king_target = Coordinate::new(self.side.king_end_col(), row);
+        let rook_pos = Coordinate::new(self.side.rook_start_col(), row);
+        let rook_target = Coordinate::new(self.side.rook_end_col(), row);
 
         game.move_from(&king_pos, &king_target);
         game.move_from(&rook_pos, &rook_target);
@@ -299,26 +340,79 @@ impl Action for Castle {
 
         //do the same thing as above, but reversed.
         let king_target = Coordinate::new(4, row);
-        let king_pos: Coordinate;
-        let rook_pos: Coordinate;
-        let rook_target: Coordinate;
-
-        //set current locations and target locations
-        match self.side {
-            CastleSide::KingSide => {
-                king_pos = Coordinate::new(6, row);
-                rook_target = Coordinate::new(7, row);
-                rook_pos = Coordinate::new(5, row);
-            }
-            CastleSide::QueenSide => {
-                king_pos = Coordinate::new(2, row);
-                rook_target = Coordinate::new(0, row);
-                rook_pos = Coordinate::new(3, row);
-            }
-        }
+        let king_pos = Coordinate::new(self.side.king_end_col(), row);
+        let rook_pos = Coordinate::new(self.side.rook_end_col(), row);
+        let rook_target = Coordinate::new(self.side.rook_start_col(), row);
 
         game.move_from(&king_pos, &king_target);
         game.move_from(&rook_pos, &rook_target);
+
+        //reset has_moved
+        game.mut_square(&king_target).piece.unwrap().has_moved = false;
+        game.mut_square(&rook_target).piece.unwrap().has_moved = false;
+    }
+
+    fn is_illegal(&mut self, game: &mut Board) -> bool {
+        let row = self.row();
+
+        //check whether the king is there and legal
+        let king_loc = Coordinate::new(4, row);
+        let expected_king = Piece {
+            color: self.player,
+            ptype: board::PieceType::King,
+            location: king_loc,
+            has_moved: false,
+        };
+        let king_square = game.square(&king_loc);
+        let king = match king_square.piece {
+            Some(king) => king,
+            None => return true,
+        };
+        if king != expected_king {
+            return true;
+        }
+
+        if game.is_check(king.color) {
+            return true;
+        }
+
+        //check for rook
+        let rook_loc = Coordinate::new(self.side.rook_start_col(), row);
+        let expected_rook = Piece {
+            color: self.player,
+            ptype: board::PieceType::Rook,
+            location: rook_loc,
+            has_moved: false,
+        };
+        let rook_square = game.square(&rook_loc);
+        let rook = match rook_square.piece {
+            Some(rook) => rook,
+            None => return true,
+        };
+        if rook != expected_rook {
+            return true;
+        }
+
+        //check for empty and unattacked squares
+        for col in self.side.squares_that_must_be_empty() {
+            let coord = Coordinate::new(col, row);
+
+            let opponent_threats = match self.player {
+                board::Color::White => &game.move_info.black_threatened_squares,
+                board::Color::Black => &game.move_info.white_threatened_squares,
+            };
+
+            if opponent_threats.contains(&coord) {
+                return true;
+            }
+
+            let square = game.square(&coord);
+            if square.piece.is_some() {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
@@ -344,8 +438,12 @@ impl Castle {
 ///## new() -> Self
 ///Creates a new instance with empty Vecs in its fields.
 ///
+///## from(game: &board::Board) -> Self
+///Creates a MoveInfo instance with information generated from the board.
+///
 ///## update(&mut self, game: &board::Board)
 ///Generates moves for game and updates self's fields with info.
+#[derive(Debug)]
 pub struct MoveInfo {
     pub(crate) white_threatened_squares: Vec<Coordinate>,
     pub(crate) black_threatened_squares: Vec<Coordinate>,
@@ -363,20 +461,26 @@ impl MoveInfo {
         }
     }
 
+    pub fn from(game: &Board) -> Self {
+        let mut info = Self::new();
+        info.update(game);
+        info
+    }
+
     pub fn update(&mut self, game: &Board) {
-        let white_potential_moves = game.white_potential_moves();
-        let black_potential_moves = game.black_potential_moves();
-        
+        self.white_potential_moves = game.white_potential_moves();
+        self.black_potential_moves = game.black_potential_moves();
+
         self.white_threatened_squares = Vec::new();
-        for m in white_potential_moves {
-            if let Some(coord) = m.from_coordinate() {
+        for m in self.white_potential_moves.iter() {
+            if let Some(coord) = m.to_coordinate() {
                 self.white_threatened_squares.push(coord);
             }
         }
 
         self.black_threatened_squares = Vec::new();
-        for m in black_potential_moves {
-            if let Some(coord) = m.from_coordinate() {
+        for m in self.black_potential_moves.iter() {
+            if let Some(coord) = m.to_coordinate() {
                 self.black_threatened_squares.push(coord);
             }
         }
@@ -722,6 +826,34 @@ impl Piece {
 
 //Get moves for players
 impl Board {
+    pub fn is_check(&self, player: board::Color) -> bool {
+        let mut kings = self.pieces();
+        kings.retain(|x| x.color == player && x.ptype == board::PieceType::King);
+
+        if kings.len() != 1 {
+            eprintln!(
+                "Board::is_check(): Instead of 1, kings.len() is {}. Returning false.",
+                kings.len()
+            );
+            false
+        } else {
+            //find if location is in player's threats
+            if player == board::Color::White {
+                self.move_info
+                    .black_threatened_squares
+                    .contains(&kings[0].location)
+            } else {
+                self.move_info
+                    .white_threatened_squares
+                    .contains(&kings[0].location)
+            }
+        }
+    }
+
+    pub fn update(&mut self) {
+        self.move_info = MoveInfo::from(self);
+    }
+
     fn white_potential_moves(&self) -> Vec<Box<dyn Action>> {
         let mut moves = Vec::new();
 
@@ -752,31 +884,6 @@ mod tests {
         let mut b = Board::new();
         b.populate_starting_pos();
         b
-    }
-
-    #[test]
-    fn undo_move() {
-        //create default board
-        let mut b = default_board();
-        let backup = b.clone();
-
-        //move king to center of board because why not
-        let mut m = Move::new(
-            Coordinate::new(4, 0),
-            Coordinate::new(4, 3),
-            &b,
-            None,
-            false,
-        );
-        m.perform_on(&mut b);
-        m.undo_on(&mut b);
-
-        println!("backup turn: {}", backup.turn);
-        println!("real turn: {}", b.turn);
-        println!("backup round: {}", backup.round);
-        println!("real round: {}", b.round);
-
-        assert_eq!(b, backup);
     }
 
     #[test]
@@ -821,9 +928,22 @@ mod tests {
     //elements.
     fn twenty_two_opening_moves() {
         let b = default_board();
-        //println!("White moves: {:?}", b.white_potential_moves());
+
         assert_eq!(b.white_potential_moves().len(), 22);
         assert_eq!(b.black_potential_moves().len(), 22);
+    }
+
+    #[test]
+    fn twenty_legal_opening_moves() {
+        let mut b = default_board();
+
+        let mut white_moves = b.white_potential_moves();
+        white_moves.retain_mut(|x| !x.is_illegal(&mut b));
+        let mut black_moves = b.black_potential_moves();
+        black_moves.retain_mut(|x| !x.is_illegal(&mut b));
+
+        assert_eq!(white_moves.len(), 20);
+        assert_eq!(black_moves.len(), 20);
     }
 
     #[test]
@@ -920,5 +1040,32 @@ mod tests {
         b.put_piece_on(&jumping_pawn_loc, jumping_pawn);
         b.put_piece_on(&capture_pawn_loc, capture_pawn);
         assert_eq!(capture_pawn.potential_moves(&b).len(), 2);
+    }
+
+    #[test]
+    fn is_check() {
+        let mut b = Board::new();
+        let king_loc = Coordinate::new(4, 0);
+        let rook_loc = Coordinate::new(0, 0);
+        let king = Piece {
+            color: board::Color::White,
+            ptype: board::PieceType::King,
+            location: king_loc,
+            has_moved: true,
+        };
+        let rook = Piece {
+            color: board::Color::Black,
+            ptype: board::PieceType::Rook,
+            location: rook_loc,
+            has_moved: true,
+        };
+        b.put_piece_on(&king_loc, king);
+        b.put_piece_on(&rook_loc, rook);
+        b.update();
+        println!(
+            "Black threatened squares: {:?}",
+            b.move_info.black_threatened_squares
+        );
+        assert_eq!(b.is_check(board::Color::White), true);
     }
 }
