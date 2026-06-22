@@ -311,6 +311,14 @@ impl fmt::Display for Board {
     }
 }
 
+impl Default for Board {
+    fn default() -> Self {
+        let mut new = Self::new();
+        new.populate_starting_pos();
+        new
+    }
+}
+
 impl PartialEq for Board {
     //VERY INEFFICENT
     fn eq(&self, other: &Self) -> bool {

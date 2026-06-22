@@ -9,4 +9,7 @@ pub mod movement;
 
 pub use board::{Board, Color, Coordinate};
 
-pub use movement::{Action, Castle, CastleSide, Move};
+#[cfg(test)]
+pub use board::Piece;
+
+pub use movement::{Action, Castle, Move, CastleSide};
