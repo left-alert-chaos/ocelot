@@ -117,15 +117,21 @@ impl Color {
 ///
 ///## with_offset(&self, rise: i32, run: i32) -> Coordinate
 ///Creates a new coordinate a certain number of rows and columns away from self.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct Coordinate {
     pub(crate) row: usize,
     pub(crate) col: usize,
 }
 
-impl fmt::Display for Coordinate {
+impl fmt::Debug for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Coordinate col = {} row = {}", self.col, self.row)
+    }
+}
+
+impl fmt::Display for Coordinate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", LETTERS.chars().nth(self.col).unwrap_or('a'), self.row + 1)
     }
 }
 
@@ -299,6 +305,10 @@ impl Piece {
 ///
 ///## update(&mut self)
 ///Replaces move_info field with up-to-date one.
+///
+///## duplicate(&self) -> Self
+///Creates an identical new Board.
+///Runs in O(n) time, so use sparingly.
 #[derive(Debug)]
 pub struct Board {
     squares: [[Square; 8]; 8],
@@ -450,10 +460,6 @@ impl Board {
         &mut self.squares[coord.col][coord.row]
     }
 
-    pub fn remove_on(&mut self, coord: &Coordinate) {
-        self.squares[coord.col][coord.row].piece = None;
-    }
-
     pub fn put_piece_on(&mut self, coord: &Coordinate, mut piece: Piece) {
         let s = self.mut_square(coord);
         piece.location = *coord;
@@ -461,7 +467,7 @@ impl Board {
         self.locations.push(*coord);
     }
 
-    pub fn remove_piece_on(&mut self, coord: &Coordinate) {
+    pub fn remove_on(&mut self, coord: &Coordinate) {
         //delete piece and remove location from locations
         self.mut_square(coord).piece = None;
         self.locations.retain(|loc| loc != coord);
@@ -531,6 +537,22 @@ impl Board {
         }
 
         output
+    }
+
+    pub fn duplicate(&self) -> Self {
+        let mut new = Self::new();
+
+        //iterate over pieces and place on new board
+        for piece in self.pieces() {
+            new.put_piece_on(&piece.location, piece);
+        }
+
+        //set other fields
+        new.turn = self.turn;
+        new.round = self.round;
+        new.update();
+
+        new
     }
 }
 

@@ -4,12 +4,16 @@
 use std::fmt;
 use crate::physical::board::{self, Board, Coordinate, Piece};
 
+///# Action
+///Implemented by Move and Castle.
+///Display should display the classical coordinate instead of 0-indexed coordinate.
 pub trait Action: fmt::Debug + fmt::Display {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
     fn to_coordinate(&self) -> Option<Coordinate>;
     fn is_illegal(&mut self, game: &mut Board) -> bool;
+    fn duplicate(&self) -> Box<dyn Action>;
 }
 
 ///# Move
@@ -34,15 +38,15 @@ impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Move from {} to {} with value {}",
-            self.from, self.to, self.value
+            "Move from {} to {}",
+            self.from, self.to
         )
     }
 }
 
 impl fmt::Debug for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{self} [DEBUG]")
+        write!(f, "Move from {:?} to {:?} with value {} [DEBUG]", self.from, self.to, self.value)
     }
 }
 
@@ -110,12 +114,12 @@ impl Action for Move {
         }
 
         //perform move
-        game.remove_piece_on(&self.from);
+        game.remove_on(&self.from);
         game.put_piece_on(&self.to, moving_piece);
 
         //lastly, delete the piece on the en_passant square
         if let Some(ep_loc) = self.en_passant {
-            game.remove_piece_on(&ep_loc);
+            game.remove_on(&ep_loc);
         }
 
         //update board
@@ -150,7 +154,7 @@ impl Action for Move {
         }
 
         //perform un-move
-        game.remove_piece_on(&self.to);
+        game.remove_on(&self.to);
         game.put_piece_on(&self.from, moving_piece);
 
         //restore en passant
@@ -187,6 +191,12 @@ impl Action for Move {
 
 
         game.update();
+    }
+
+    fn duplicate(&self) -> Box<dyn Action> {
+        Box::new(Self {
+            ..*self
+        })
     }
 }
 
@@ -417,6 +427,12 @@ impl Action for Castle {
         }
 
         false
+    }
+
+    fn duplicate(&self) -> Box<dyn Action> {
+        Box::new(Self {
+            ..*self
+        })
     }
 }
 

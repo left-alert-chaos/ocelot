@@ -12,8 +12,9 @@ impl Board {
 
         if kings.len() != 1 {
             eprintln!(
-                "Board::is_check(): Instead of 1, kings.len() is {}. Returning false.",
-                kings.len()
+                "Board::is_check({player}): Instead of 1, kings.len() is {}. Returning false.\nKings: {kings:?}\nPosition:\n{}",
+                kings.len(),
+                self.draw(),
             );
             false
         } else {

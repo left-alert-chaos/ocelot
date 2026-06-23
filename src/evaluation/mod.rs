@@ -3,3 +3,6 @@
 //!search and static eval.
 
 mod heuristic;
+mod search;
+
+pub use search::SearchTree;
