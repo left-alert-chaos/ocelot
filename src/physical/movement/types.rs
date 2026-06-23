@@ -119,7 +119,7 @@ impl Action for Move {
         }
 
         //update board
-        game.move_info = MoveInfo::from(game);
+        game.update();
     }
 
     //basically the same logic as perform_on(), but in reverse
@@ -184,6 +184,9 @@ impl Action for Move {
             };
             game.put_piece_on(&self.to, restored_piece);
         }
+
+
+        game.update();
     }
 }
 
@@ -332,6 +335,7 @@ impl Action for Castle {
 
         game.move_from(&king_pos, &king_target);
         game.move_from(&rook_pos, &rook_target);
+        game.update();
     }
 
     fn undo_on(&self, game: &mut Board) {
@@ -349,6 +353,7 @@ impl Action for Castle {
         //reset has_moved
         game.mut_square(&king_target).piece.unwrap().has_moved = false;
         game.mut_square(&rook_target).piece.unwrap().has_moved = false;
+        game.update();
     }
 
     fn is_illegal(&mut self, game: &mut Board) -> bool {

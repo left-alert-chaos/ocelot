@@ -30,6 +30,23 @@ impl Board {
         }
     }
 
+    ///# is_checkmate
+    ///Assumes that move_info.*potential_moves has been filtered for legality.
+    pub fn is_checkmate(&self, player: board::Color) -> bool {
+        if !self.is_check(player) {
+            return false;
+        }
+
+        match player {
+            board::Color::White => {
+                self.move_info.white_potential_moves.is_empty()
+            }
+            board::Color::Black => {
+                self.move_info.black_potential_moves.is_empty()
+            }
+        }
+    }
+
     pub fn update(&mut self) {
         self.move_info = MoveInfo::from(self);
     }

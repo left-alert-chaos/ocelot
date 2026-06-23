@@ -283,6 +283,9 @@ impl Piece {
 ///## is_check(&self, player: Color) -> bool
 ///Is player's king threatened?
 ///
+///## is_checkmate(&self, player: Color) -> bool
+///Is check and no legal moves?
+///
 ///## remove_piece_on(&mut self, coord: &Coordinate)
 ///Deletes the piece at the coordinate and removes coordinate from piece locations list.
 ///

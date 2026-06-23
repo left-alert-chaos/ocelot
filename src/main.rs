@@ -1,4 +1,5 @@
 mod physical;
+mod evaluation;
 use physical::{Action, Castle, CastleSide, Color, Move};
 
 fn main() {
