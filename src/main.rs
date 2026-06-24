@@ -1,7 +1,8 @@
 mod physical;
 mod evaluation;
-use physical::{Action, Castle, CastleSide, Color, Move};
-use evaluation::SearchTree;
+mod bot;
+use bot::Ocelot;
+use physical::*;
 
 fn main() {
     let mut b = physical::Board::new();
@@ -9,11 +10,7 @@ fn main() {
 
     let depth = 6;
     println!("Depth: {depth}");
-    let mut tree = SearchTree::new(&b, depth);
-    let maybe_best_move = tree.best_move();
-    let best_move = match maybe_best_move {
-        Ok(m) => format!("{}", m),
-        Err(_) => String::from("No best move!"),
-    };
-    println!("Default position:\n{}\n\nBest move: {}", b.draw(), best_move);
+    let mut engine = Ocelot::new(&b, board::Color::White, depth);
+    let best_move = engine.safe_best_move();
+    println!("Best move for white in default position: {}", best_move);
 }
