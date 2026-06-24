@@ -59,7 +59,22 @@ impl Board {
             moves.append(&mut piece.potential_moves(self));
         }
 
-        moves
+        let mut captures = Vec::new();
+        let mut normal = Vec::new();
+
+        //crude move ordering
+        for action in moves {
+            let value = action.evaluate();
+            if value < 1.0 || value == 2.0 {
+                normal.push(action);
+            } else {
+                captures.push(action);
+            }
+        }
+
+        captures.append(&mut normal);
+
+        captures
     }
 
     pub fn black_potential_moves(&self) -> Vec<Box<dyn Action>> {
@@ -69,6 +84,21 @@ impl Board {
             moves.append(&mut piece.potential_moves(self));
         }
 
-        moves
+        let mut captures = Vec::new();
+        let mut normal = Vec::new();
+
+        //crude move ordering
+        for action in moves {
+            let value = action.evaluate();
+            if value < 1.0 || value == 2.0 {
+                normal.push(action);
+            } else {
+                captures.push(action);
+            }
+        }
+
+        captures.append(&mut normal);
+
+        captures
     }
 }

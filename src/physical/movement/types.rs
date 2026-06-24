@@ -14,6 +14,7 @@ pub trait Action: fmt::Debug + fmt::Display {
     fn to_coordinate(&self) -> Option<Coordinate>;
     fn is_illegal(&mut self, game: &mut Board) -> bool;
     fn duplicate(&self) -> Box<dyn Action>;
+    fn evaluate(&self) -> f64;
 }
 
 ///# Move
@@ -197,6 +198,10 @@ impl Action for Move {
         Box::new(Self {
             ..*self
         })
+    }
+
+    fn evaluate(&self) -> f64 {
+        self.value as f64
     }
 }
 
@@ -433,6 +438,10 @@ impl Action for Castle {
         Box::new(Self {
             ..*self
         })
+    }
+
+    fn evaluate(&self) -> f64 {
+        2.0
     }
 }
 

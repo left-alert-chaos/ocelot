@@ -7,6 +7,7 @@
 use crate::physical::movement::MoveInfo;
 use std::fmt;
 use std::mem::{self, MaybeUninit};
+use std::collections::HashSet;
 
 pub const LETTERS: &str = "abcdefgh";
 
@@ -117,7 +118,7 @@ impl Color {
 ///
 ///## with_offset(&self, rise: i32, run: i32) -> Coordinate
 ///Creates a new coordinate a certain number of rows and columns away from self.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Coordinate {
     pub(crate) row: usize,
     pub(crate) col: usize,
@@ -312,7 +313,7 @@ impl Piece {
 #[derive(Debug)]
 pub struct Board {
     squares: [[Square; 8]; 8],
-    pub(crate) locations: Vec<Coordinate>, //stores locations of pieces
+    pub(crate) locations: HashSet<Coordinate>, //stores locations of pieces
     pub(crate) turn: Color,
     pub(crate) round: i32, //the number of the set of 2 moves
     pub(crate) move_info: MoveInfo,
@@ -386,7 +387,7 @@ impl Board {
 
         Board {
             squares: grid,
-            locations: Vec::new(),
+            locations: HashSet::new(),
             turn: Color::White,
             round: 1, //not 0-indexed; 0 is used to signal "never" or a turn that is impossible
             move_info: MoveInfo::new(),
@@ -464,13 +465,13 @@ impl Board {
         let s = self.mut_square(coord);
         piece.location = *coord;
         s.piece = Some(piece);
-        self.locations.push(*coord);
+        self.locations.insert(*coord);
     }
 
     pub fn remove_on(&mut self, coord: &Coordinate) {
         //delete piece and remove location from locations
         self.mut_square(coord).piece = None;
-        self.locations.retain(|loc| loc != coord);
+        self.locations.remove(coord);
     }
 
     pub fn move_from(&mut self, from: &Coordinate, to: &Coordinate) {

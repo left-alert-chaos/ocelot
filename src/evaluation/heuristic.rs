@@ -22,6 +22,29 @@ impl Board {
         }
         value
     }
+    
+    //check if there are pawns in the center, and give a score for it.
+    pub fn pawns_in_center(&self) -> f64 {
+        let mut value = 0.0;
+
+        for col in 3..=4 {
+            for row in 3..=4 {
+                //get piece
+                let location = Coordinate::new(col as usize, row as usize);
+                let square = self.square(&location);
+                let Some(piece) = square.piece else {
+                    continue;
+                };
+
+                //determine score
+                if piece.ptype.value() == 1 {
+                    value += 0.5 * (piece.color.value() as f64);
+                }
+            }
+        }
+
+        value
+    }
 
     pub fn evaluation(&self) -> f64 {
         if self.is_checkmate(board::Color::White) {
@@ -33,6 +56,9 @@ impl Board {
         //base heuristic is just white material minus black material
         let mut valuation = self.white_material() as f64;
         valuation -= self.black_material() as f64;
+        
+        //do various heuristic checks
+        valuation += self.pawns_in_center();
 
         valuation
     }
