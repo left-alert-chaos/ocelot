@@ -10,7 +10,7 @@ use crate::evaluation::SearchTree;
 ///The whole reason we're here. This struct keeps track of game state and uses SearchTrees to
 ///generate the best move for the player the bot is assigned.
 pub struct Ocelot {
-    board: Board,
+    pub(crate) board: Board,
     player: board::Color,
     depth: i32,
 }

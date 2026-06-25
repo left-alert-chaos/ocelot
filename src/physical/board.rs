@@ -18,6 +18,9 @@ pub const LETTERS: &str = "abcdefgh";
 ///
 ///## value(&self) -> i32
 ///Returns the value of a piece (1, 3, 5, 9, 50)
+///
+///## from(letter: char) -> Result<Self, ()>
+///Creates Self from piece letter
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PieceType {
     Pawn(i32), //store turn pawn can be en passant'd on.
@@ -37,6 +40,18 @@ impl PieceType {
             PieceType::Rook => 5,
             PieceType::Queen => 9,
             PieceType::King => 50,
+        }
+    }
+
+    pub fn from(letter: char) -> Result<Self, ()> {
+        match letter.to_ascii_lowercase() {
+            'p' => Ok(Self::Pawn(0)),
+            'n' => Ok(Self::Knight),
+            'b' => Ok(Self::Bishop),
+            'r' => Ok(Self::Rook),
+            'q' => Ok(Self::Queen),
+            'k' => Ok(Self::King),
+            _ => Err(()),
         }
     }
 
@@ -118,6 +133,10 @@ impl Color {
 ///
 ///## with_offset(&self, rise: i32, run: i32) -> Coordinate
 ///Creates a new coordinate a certain number of rows and columns away from self.
+///
+///## from(repr: String) -> Coordinate 
+///Returns a coordinate from a 2-character string of <col><row>
+///This is not 0-indexed, so row is decremented by one.
 #[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Coordinate {
     pub(crate) row: usize,
@@ -182,6 +201,16 @@ impl Coordinate {
 
     pub fn new(col: usize, row: usize) -> Self {
         Coordinate { row, col }
+    }
+
+    pub fn from(repr: &mut String) -> Self {
+        let col = col_num(repr.remove(0));
+        let row = repr.remove(0).to_string().parse::<usize>();
+        
+        Self {
+            col,
+            row: row.unwrap() - 1,
+        }
     }
 }
 
@@ -310,6 +339,9 @@ impl Piece {
 ///## duplicate(&self) -> Self
 ///Creates an identical new Board.
 ///Runs in O(n) time, so use sparingly.
+///
+///## round_next_turn(&self) -> i32
+///Gets what round it will be next turn
 #[derive(Debug)]
 pub struct Board {
     squares: [[Square; 8]; 8],
@@ -555,6 +587,13 @@ impl Board {
 
         new
     }
+
+    pub fn round_next_turn(&self) -> i32 {
+        match self.turn {
+            Color::White => self.round,
+            Color::Black => self.round + 1,
+        }
+    }
 }
 
 pub fn col_num(name: char) -> usize {
@@ -596,5 +635,12 @@ mod tests {
         assert_eq!(b.pieces().len(), 32);
         assert_eq!(b.white_pieces().len(), 16);
         assert_eq!(b.black_pieces().len(), 16);
+    }
+
+    #[test]
+    fn coordinate_from() {
+        let expected = Coordinate::new(0, 0);
+        let generated = Coordinate::from(&mut String::from("a1"));
+        assert_eq!(generated, expected);
     }
 }

@@ -94,7 +94,7 @@ impl SearchNode {
                     }
 
                     //otherwise, check for better
-                    child.value = child.board.evaluation();
+                    child.value = child.board.evaluation() * self.player.value() as f64;
                     let unwrapped_best_value = best_value.unwrap();
                     if child.value >= unwrapped_best_value {
                         best_value = Some(child.value);

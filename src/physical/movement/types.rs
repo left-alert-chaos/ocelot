@@ -79,7 +79,6 @@ impl Action for Move {
 
     //Doesn't use game.move_from() because it might need to modify the piece before it moves.
     fn perform_on(&mut self, game: &mut Board) {
-        game.round += 1;
         let from_square = game.mut_square(&self.from);
         let mut moving_piece = from_square.piece.unwrap_or_else(|| {
             panic!("{self} isn't legal because it is from a square without a piece.")
@@ -205,6 +204,12 @@ impl Action for Move {
     }
 }
 
+impl PartialEq for Move {
+    fn eq(&self, other: &Self) -> bool {
+        self.from == other.from && self.to == other.to
+    }
+}
+
 impl Move {
     pub fn new(
         from: Coordinate,
@@ -213,21 +218,40 @@ impl Move {
         promotion: Option<board::PieceType>,
         en_passant: bool,
     ) -> Self {
-        let en_passant_location = if en_passant {
-            //direction of en passant, NOT pawn movement direction.
-            let direction: i32 = if from.row < to.row { -1 } else { 1 };
-            to.with_offset(direction, 0).ok()
-        } else {
-            None
-        };
-
+        //get info about move
         let mut piece_first_move = false;
+        let mut moving_piece_color = None;
         let moving_piece = game.square(&from).piece;
         if let Some(piece) = moving_piece {
             piece_first_move = !piece.has_moved;
+            moving_piece_color = Some(piece.color);
         } else {
-            println!("WARNING: Creating move from {from}, which doesn't have a piece.");
+            eprintln!("WARNING: Creating move from {from}, which doesn't have a piece.");
         }
+
+        //check if en passant is possible
+        let en_passant_location = if en_passant {
+            //direction of en passant, NOT pawn movement direction.
+            let direction: i32 = if from.row < to.row { -1 } else { 1 };
+            let loc = to.with_offset(direction, 0).unwrap();
+            
+            //check if can be en passant'ed
+            match game.square(&loc).piece {
+                Some(piece) => {
+                    //can it be en passant'ed this turn?
+                    if piece.ptype == board::PieceType::Pawn(game.round) && Some(piece.color) != moving_piece_color {
+                        Some(loc)
+                    } else {
+                        None
+                    }
+                }
+                None => {
+                    None
+                }
+            }
+        } else {
+            None
+        };
 
         //do a quick-and-dirty evaluation. This is overwritten by search, but useful in some places.
         let value = if let Some(ptype) = promotion {
