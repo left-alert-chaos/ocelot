@@ -1,6 +1,13 @@
 [package]
-name = "sophisticate"
+name = "ocelot-chess"
 version = "0.1.0"
 edition = "2024"
+license-file = "LICENSE"
+authors = ["left-alert-chaos"]
+description = "A simple(ish) chess engine written entirely in Rust with no dependencies."
+readme = "README.md"
+repository = "https://github.com/left-alert-chaos/ocelot"
+keywords = ["chess"]
+exclude = ["target"]
 
 [dependencies]

@@ -3,11 +3,12 @@
 
 use std::fmt;
 use crate::physical::board::{self, Board, Coordinate, Piece};
+use crate::bot::ToUCI;
 
 ///# Action
 ///Implemented by Move and Castle.
 ///Display should display the classical coordinate instead of 0-indexed coordinate.
-pub trait Action: fmt::Debug + fmt::Display {
+pub trait Action: fmt::Debug + fmt::Display + ToUCI {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
@@ -26,11 +27,11 @@ pub trait Action: fmt::Debug + fmt::Display {
 ///value: u32, promotion: Option<board::PieceType>)
 #[derive(Copy, Clone)]
 pub struct Move {
-    from: Coordinate,
-    to: Coordinate,
+    pub(crate) from: Coordinate,
+    pub(crate) to: Coordinate,
     en_passant: Option<Coordinate>,
     value: u32,
-    promotion: Option<board::PieceType>,
+    pub(crate) promotion: Option<board::PieceType>,
     captured_type: Option<board::PieceType>,
     piece_first_move: bool,
 }
@@ -287,7 +288,7 @@ impl Move {
 
 ///# CastleSide
 ///Represents the side a player can castle on.ype.
-#[derive(Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum CastleSide {
     KingSide,
     QueenSide,
@@ -304,6 +305,13 @@ impl fmt::Display for CastleSide {
 }
 
 impl CastleSide {
+    pub fn king_end_col(&self) -> usize {
+        match self {
+            Self::KingSide => 6,
+            Self::QueenSide => 2,
+        }
+    }
+
     fn rook_start_col(&self) -> usize {
         match self {
             Self::KingSide => 7,
@@ -315,13 +323,6 @@ impl CastleSide {
         match self {
             Self::KingSide => 5,
             Self::QueenSide => 3,
-        }
-    }
-
-    fn king_end_col(&self) -> usize {
-        match self {
-            Self::KingSide => 6,
-            Self::QueenSide => 2,
         }
     }
 
@@ -341,10 +342,10 @@ impl CastleSide {
 ///
 ///## new(side: CastleSide, player: board::Color) -> Self
 ///Simple abstraction to functionally instantiate the struct.
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct Castle {
-    side: CastleSide,
-    player: board::Color,
+    pub(crate) side: CastleSide,
+    pub(crate) player: board::Color,
 }
 
 impl fmt::Display for Castle {

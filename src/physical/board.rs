@@ -21,6 +21,9 @@ pub const LETTERS: &str = "abcdefgh";
 ///
 ///## from(letter: char) -> Result<Self, ()>
 ///Creates Self from piece letter
+///
+///## letter(&self) -> char
+///Gets a character representing the piece type.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PieceType {
     Pawn(i32), //store turn pawn can be en passant'd on.
@@ -55,7 +58,7 @@ impl PieceType {
         }
     }
 
-    fn letter(&self) -> char {
+    pub fn letter(&self) -> char {
         match self {
             PieceType::Pawn(_) => 'p',
             PieceType::Knight => 'n',
@@ -77,6 +80,9 @@ impl PieceType {
 ///
 ///## opposite(&self) -> Self
 ///If self is white, return black. If self is black, return white.
+///
+///## home_rank(&self) -> usize
+///Returns the 0 or 7
 #[derive(Eq, PartialEq, Clone, Default, Copy)]
 pub enum Color {
     #[default]
@@ -105,6 +111,13 @@ impl Color {
         match self {
             Color::White => 1,
             Color::Black => -1,
+        }
+    }
+    
+    pub fn home_rank(&self) -> usize {
+        match self {
+            Color::White => 0,
+            Color::Black => 7,
         }
     }
 

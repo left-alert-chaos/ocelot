@@ -7,7 +7,7 @@
 pub mod board;
 pub mod movement;
 
-pub use board::{Board, Color, Coordinate};
+pub use board::{Board, Coordinate};
 
 #[cfg(test)]
 pub use board::Piece;

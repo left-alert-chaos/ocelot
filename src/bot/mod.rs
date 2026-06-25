@@ -3,6 +3,7 @@
 //!the UCI implementation.
 
 mod uci;
+pub use uci::ToUCI;
 use crate::physical::*;
 use crate::evaluation::SearchTree;
 
