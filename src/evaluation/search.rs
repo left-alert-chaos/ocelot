@@ -18,9 +18,38 @@ impl SearchTree {
             root: SearchNode::new(game, turn),
             depth,
         }
+    } 
+
+    pub fn safe_best_move(&mut self) -> Box<dyn Action> {
+        let search_result = self.best_move();
+        if let Ok(action) = search_result {
+            return action;
+        }
+
+        //otherwise, find best legal move
+        let mut board = self.root.board.duplicate();
+        let mut potential_moves = if self.root.player == board::Color::White {board.white_potential_moves()} else {board.black_potential_moves()};
+
+        //look at all legal moves
+        let mut best_value = potential_moves[0].evaluate();
+        let mut best_action = potential_moves[0].duplicate();
+        let mut value;
+        for action in potential_moves.iter_mut() {
+            if action.is_illegal(&mut board) {
+                continue;
+            }
+
+            value = action.evaluate();
+            if value > best_value {
+                best_value = value;
+                best_action = action.duplicate();
+            }
+        }
+
+        best_action.duplicate()
     }
 
-    pub fn best_move(&mut self) -> Result<Box<dyn Action>, ()> {
+    fn best_move(&mut self) -> Result<Box<dyn Action>, ()> {
         self.root.alphabeta(self.depth, f64::NEG_INFINITY, f64::INFINITY, true, true);
         
         //convert option to result
@@ -35,6 +64,7 @@ pub struct SearchNode {
     board: Board,
     value: f64,
     best_move: Option<Box<dyn Action>>,
+    best_child: Box<Option<SearchNode>>,
     player: board::Color,
 }
 
@@ -45,6 +75,7 @@ impl SearchNode {
             board: game,
             value,
             best_move: None,
+            best_child: Box::new(None),
             player,
         }
     }
@@ -81,27 +112,32 @@ impl SearchNode {
                 action.perform_on(&mut child_board);
                 let mut child = Self::new(child_board, self.player);
 
-                //recursion and pruning
+                //recursion
                 let recursion_result = child.alphabeta(depth - 1, alpha, beta, false, false);
                 value = max(value, recursion_result);
 
-                //handle root node best move logic
-                if is_root {
-                    if self.best_move.is_none() {
-                        self.best_move = Some(action);
-                        best_value = Some(child.value);
-                        continue;
-                    }
+                //handle best move logic
+                
+                //prepopulate if no best params yet
+                if self.best_move.is_none() {
+                    self.best_move = Some(action);
+                    best_value = Some(child.evaluate());
 
-                    //otherwise, check for better
-                    child.value = child.board.evaluation() * self.player.value() as f64;
-                    let unwrapped_best_value = best_value.unwrap();
-                    if child.value >= unwrapped_best_value {
-                        best_value = Some(child.value);
-                        self.best_move = Some(action.duplicate());
-                    }
+                    //put the child in a box haha
+                    self.best_child = Box::new(Some(child));
+                    continue;
                 }
 
+                //otherwise, check for better
+                child.value = child.evaluate();
+                let unwrapped_best_value = best_value.unwrap();
+                if child.value >= unwrapped_best_value {
+                    best_value = Some(child.value);
+                    self.best_move = Some(action.duplicate());
+                    self.best_child = Box::new(Some(child));
+                }
+
+                //handle pruning
                 if value >= beta {
                     break;
                 }
@@ -109,6 +145,8 @@ impl SearchNode {
             }
         } else {
             value = f64::INFINITY;
+
+            let mut best_value: Option<f64> = None;
             for m in potential_moves {
                 let mut action = m.duplicate();
 
@@ -121,8 +159,29 @@ impl SearchNode {
                 action.perform_on(&mut child_board);
                 let mut child = Self::new(child_board, self.player);
 
-                //recursion and pruning
-                value = min(value, child.alphabeta(depth - 1, alpha, beta, true, false));
+                //recursion
+                let recursion_result = child.alphabeta(depth - 1, alpha, beta, true, false);
+                value = min(value, recursion_result);
+
+                //find best child
+                if self.best_move.is_none() {
+                    self.best_move = Some(action);
+                    best_value = Some(child.evaluate());
+
+                    //put the child in a box
+                    self.best_child = Box::new(Some(child));
+                    continue;
+                }
+
+                //otherwise, check for better
+                child.value = child.evaluate();
+                let unwrapped_best_value = best_value.unwrap();
+                if child.value >= unwrapped_best_value {
+                    best_value = Some(child.value);
+                    self.best_move = Some(action.duplicate());
+                    self.best_child = Box::new(Some(child));
+                }
+
                 if value <= alpha {
                     break;
                 }
@@ -132,6 +191,10 @@ impl SearchNode {
 
         self.value = value;
         value
+    }
+
+    fn evaluate(&self) -> f64 {
+        self.board.evaluation() * self.player.value() as f64
     }
 }
 
