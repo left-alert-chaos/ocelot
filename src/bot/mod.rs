@@ -6,7 +6,6 @@ mod uci;
 pub use uci::ToUCI;
 use crate::physical::*;
 use crate::evaluation::SearchTree;
-use crate::bot::uci::FromUCI;
 use std::io;
 
 //TODO: add config options
@@ -102,11 +101,14 @@ impl Ocelot {
                 println!("uciok");
             }
             "ucinewgame" => {},
-            "isready" => {} //TODO: wait for background search to finish, if I ever implement
+            "isready" => {println!("readyok");} //TODO: wait for background search to finish, if I ever implement
                                //background search
             "setoption" => {} //TODO: Implement option setting
             "position" => {
                 self.position(command_tail);
+            }
+            "go" => {
+                self.go(command_tail);
             }
             _ => {
                 eprintln!("Ocelot::interpret_uci(): Command {command} isn't implemented.");
@@ -114,6 +116,12 @@ impl Ocelot {
         }
 
         true
+    }
+
+    //get the move and play it
+    fn go(&mut self, _command: &str) {
+        let mut tree = SearchTree::new(&self.board, 4);
+        let best_move = tree.safe_best_move();
     }
 
     fn position(&mut self, repr: &str) {
