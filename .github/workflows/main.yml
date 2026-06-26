@@ -1,22 +1,15 @@
-# This is borrowed from https://www.geeksforgeeks.org/devops/run-python-script-in-github-actions/
-name: Run Testlib
+name: Testing
 
 on:
   push
 
 jobs:
-  run-testlib:
+  cargo:
     runs-on: ubuntu-latest
 
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: python setup
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-
-      - name: run testing/testlib.py
-        run: python3 testing/testlib.py
-
+      - name: cargo test
+        run: cargo test
