@@ -43,27 +43,8 @@ impl Ocelot {
     ///legal one.
     ///Remember that this doesn't apply the move, just generates it.
     pub fn safe_best_move(&mut self) -> Box<dyn Action> {
-        let search_result = self.best_move();
-        if let Ok(action) = search_result {
-            return action;
-        }
-
-        //if that didn't work, just get the first legal move
-        eprintln!("Ocelot::safe_best_move(): Search didn't return a move, so getting first legal one.");
-        let potential_moves = match self.player {
-            board::Color::White => self.board.white_potential_moves(),
-            board::Color::Black => self.board.black_potential_moves(),
-        };
-
-        //look for legal moves
-        for mut m in potential_moves {
-            if !m.is_illegal(&mut self.board) {
-                return m
-            }
-        }
-
-        //not much else you can do
-        panic!("Ocelot::safe_best_move(): Search didn't return a move and no potential moves are legal!");
+        let mut tree = SearchTree::new(&self.board, self.depth);
+        tree.safe_best_move()
     }
 
     pub fn perform_on_self(&mut self, mut action: Box<dyn Action>) {
@@ -120,8 +101,9 @@ impl Ocelot {
 
     //get the move and play it
     fn go(&mut self, _command: &str) {
-        let mut tree = SearchTree::new(&self.board, 4);
-        let best_move = tree.safe_best_move();
+        let mut best_move = self.safe_best_move();
+        best_move.perform_on(&mut self.board);
+        println!("")
     }
 
     fn position(&mut self, repr: &str) {
@@ -129,10 +111,5 @@ impl Ocelot {
         if let Ok(board) = result {
             self.board = board;
         }
-    }
-
-    fn best_move(&self) -> Result<Box<dyn Action>, ()> {
-        let mut tree = SearchTree::new(&self.board, self.depth);
-        tree.best_move()
     }
 }
