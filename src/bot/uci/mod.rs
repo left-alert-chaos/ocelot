@@ -8,6 +8,10 @@ pub trait ToUCI {
     fn generate(&self) -> String;
 }
 
+pub trait FromUCI {
+    fn parse(representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()>;
+}
+
 impl ToUCI for Move {
     fn generate(&self) -> String {
         let mut repr = format!("{}{}", self.from, self.to);
@@ -20,6 +24,68 @@ impl ToUCI for Move {
     }
 }
 
+#[allow(refining_impl_trait)]
+impl FromUCI for Move {
+    fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
+        if representation.len() > 5 || representation.len() < 4 {
+            return Err(())
+        }
+
+        let from = Coordinate::from(&mut representation);
+
+        let to = Coordinate::from(&mut representation);
+
+        let promotion = if !representation.is_empty() {
+            board::PieceType::from(representation.remove(0)).ok()
+        } else {
+            None
+        };
+
+        //If this breaks, look at the if en_passant block in new()
+        //assume en passant and if it isn't legal catch it in constructor
+        Ok(Box::new(Self::new(from, to, current_board, promotion, true)))
+    }
+}
+
+#[allow(refining_impl_trait)]
+impl FromUCI for Castle {
+    fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
+        if representation.len() != 4 {
+            return Err(())
+        }
+
+        if representation.chars().nth(0).unwrap() != 'e' {
+            return Err(())
+        }
+
+        let king_loc = Coordinate::from(&mut representation);
+        let king_target = Coordinate::from(&mut representation);
+        
+        let player = match king_loc.row {
+            0 => board::Color::White,
+            7 => board::Color::Black,
+            _ => {
+                return Err(())
+            }
+        };
+
+        let side = match king_target.col {
+            2 => CastleSide::QueenSide,
+            6 => CastleSide::KingSide,
+            _ => {
+                return Err(())
+            }
+        };
+
+        let mut castle = Self::new(side, player);
+        if castle.is_illegal(current_board) {
+            return Err(())
+        }
+
+        Ok(Box::new(castle))
+    }
+}
+
 impl ToUCI for Castle {
     fn generate(&self) -> String {
         let row = self.player.home_rank() + 1;
@@ -28,6 +94,17 @@ impl ToUCI for Castle {
 
         format!("e{row}{target}{row}")
     }
+}
+
+pub fn parse_action(representation: String, current_board: &mut Board) -> Box<dyn Action> {
+    //try generating a castle. If that doesn't work, make a Move
+    let castle = Castle::parse(representation.clone(), current_board);
+    if let Ok(c) = castle {
+        return c;
+    }
+
+    //otherwise, create a move
+    Move::parse(representation, current_board).unwrap()
 }
 
 #[cfg(test)]
