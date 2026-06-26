@@ -3,15 +3,45 @@ mod evaluation;
 mod bot;
 use bot::Ocelot;
 use physical::*;
+use std::env;
 
+//parse args
 fn main() {
-    let mut b = physical::Board::new();
-    b.populate_starting_pos();
+    let mut depth = 5;
 
-    let depth = 5;
+    let args: Vec<_> = env::args().collect();
+
+    //look for depth arguments
+    for arg in args.iter() {
+        match arg.parse::<i32>() {
+            Ok(num) => {
+                depth = num;
+                break;
+            },
+            Err(_) => continue,
+        }
+    }
+
+    if args.contains(&String::from("--demo")) {
+        demo(depth);
+    } else {
+        uci(depth);
+    }
+}
+
+//start a UCI bot
+fn uci(depth: i32) {
+    let b: Board = Default::default();
+    let mut engine = Ocelot::new(&b, depth);
+    engine.uci_loop();
+}
+
+fn demo(depth: i32) {
+    let b: Board = Default::default();
+
     println!("Depth: {depth}");
-    let mut white_engine = Ocelot::new(&b, board::Color::White, depth);
-    let mut black_engine = Ocelot::new(&b, board::Color::Black, depth);
+    let mut white_engine = Ocelot::new(&b, depth);
+    let mut black_engine = Ocelot::new(&b, depth);
 
     println!("This demo will play a game between equally-strengthed White and Black players until you kill the program. It gets chaotic and a little illegal!");
     

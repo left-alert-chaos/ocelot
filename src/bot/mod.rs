@@ -24,18 +24,18 @@ impl EngineOptions {
 ///generate the best move for the player the bot is assigned.
 pub struct Ocelot {
     pub(crate) board: Board,
-    player: board::Color,
     depth: i32,
     options: EngineOptions,
+    ponder: Option<Box<dyn Action>>,
 }
 
 impl Ocelot {
-    pub fn new(board: &Board, player: board::Color, depth: i32) -> Self {
+    pub fn new(board: &Board, depth: i32) -> Self {
         Self {
             board: board.duplicate(),
-            player,
             depth,
             options: EngineOptions::new(),
+            ponder: None,
         }
     }
 
@@ -91,6 +91,13 @@ impl Ocelot {
             "go" => {
                 self.go(command_tail);
             }
+            "ponderhit" => {
+                //perform pondered move
+                if let Some(pondered) = &mut self.ponder {
+                    pondered.perform_on(&mut self.board);
+                }
+            }
+            "stop" => {} //TODO: If background eval is ever implemented, use this to kill it
             _ => {
                 eprintln!("Ocelot::interpret_uci(): Command {command} isn't implemented.");
             }
@@ -101,9 +108,23 @@ impl Ocelot {
 
     //get the move and play it
     fn go(&mut self, _command: &str) {
-        let mut best_move = self.safe_best_move();
+        let mut tree = SearchTree::new(&self.board, self.depth);
+        let mut best_move = tree.safe_best_move();
+        let maybe_best_position = tree.root.best_child;
+
+        //get pondered move
+        let ponder = if let Some(best_pos) = *maybe_best_position {
+            if let Some(ponder) = best_pos.best_move {
+                format!("{ponder}")
+            } else {
+                String::from("0000")
+            }
+        } else {
+            String::from("0000")
+        };
+
         best_move.perform_on(&mut self.board);
-        println!("")
+        println!("bestmove {} ponder {ponder}", best_move.generate());
     }
 
     fn position(&mut self, repr: &str) {

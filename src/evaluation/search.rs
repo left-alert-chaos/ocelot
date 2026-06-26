@@ -5,7 +5,7 @@ use crate::physical::*;
 use std::fmt;
 
 pub struct SearchTree {
-    root: SearchNode,
+    pub(crate) root: SearchNode,
     depth: i32,
 }
 
@@ -63,8 +63,8 @@ impl SearchTree {
 pub struct SearchNode {
     board: Board,
     value: f64,
-    best_move: Option<Box<dyn Action>>,
-    best_child: Box<Option<SearchNode>>,
+    pub(crate) best_move: Option<Box<dyn Action>>,
+    pub(crate) best_child: Box<Option<SearchNode>>,
     player: board::Color,
 }
 
