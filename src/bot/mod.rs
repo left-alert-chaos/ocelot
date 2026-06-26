@@ -7,6 +7,7 @@ pub use uci::ToUCI;
 use crate::physical::*;
 use crate::evaluation::SearchTree;
 use std::io;
+use std::fs;
 
 //TODO: add config options
 struct EngineOptions {
@@ -118,7 +119,7 @@ impl Ocelot {
         //get pondered move
         let ponder = if let Some(best_pos) = *maybe_best_position {
             if let Some(ponder) = best_pos.best_move {
-                format!("{ponder}")
+                ponder.generate()
             } else {
                 String::from("0000")
             }
