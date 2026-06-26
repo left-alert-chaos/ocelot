@@ -98,6 +98,9 @@ impl Ocelot {
                 }
             }
             "stop" => {} //TODO: If background eval is ever implemented, use this to kill it
+            "d" => {
+                println!("{}", self.board.draw());
+            }
             _ => {
                 eprintln!("Ocelot::interpret_uci(): Command {command} isn't implemented.");
             }

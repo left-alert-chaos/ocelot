@@ -578,7 +578,7 @@ impl Board {
     }
 
     pub fn draw(&self) -> String {
-        let mut output = String::from("     a    b    c    d    e    f    g    h");
+        let mut output = String::from("   a  b  c  d  e  f  g  h");
 
         //don't use for loop because decreasing ranges are hard
         let mut row: i32 = 7;
@@ -587,7 +587,8 @@ impl Board {
             output.push_str(format!("\n\n{}", row + 1).as_str());
 
             for col in LETTERS.chars() {
-                output.push_str(" | ");
+                output.push(' ');
+
                 //get square, draw, convert to str
                 output.push_str(
                     self.square(&Coordinate::new(col_num(col), row as usize))
