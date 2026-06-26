@@ -7,9 +7,9 @@
 pub mod board;
 pub mod movement;
 
-pub use board::{Board, Coordinate};
+pub use board::{Board, Coordinate, Piece};
 
 #[cfg(test)]
-pub use board::Piece;
+pub use board::Square;
 
 pub use movement::{Action, Castle, Move, CastleSide};

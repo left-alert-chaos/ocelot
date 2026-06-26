@@ -22,10 +22,12 @@ fn main() {
         println!("White plays {white_move}");
         white_engine.perform_on_self(white_move.duplicate());
         black_engine.perform_on_self(white_move);
+        println!("White in check: {}", b.is_check(board::Color::White));
 
         let black_move = black_engine.safe_best_move();
         println!("Black plays {black_move}");
         white_engine.perform_on_self(black_move.duplicate());
         black_engine.perform_on_self(black_move);
+        println!("Black in check: {}", b.is_check(board::Color::Black));
     }
 }

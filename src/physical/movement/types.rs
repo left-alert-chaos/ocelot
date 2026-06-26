@@ -63,10 +63,10 @@ impl Action for Move {
             Some(piece) => piece,
             None => {
                 eprintln!(
-                    "Move::is_illegal(): Returning false because there is no piece where this move is from ({:?})",
+                    "Move::is_illegal(): Returning true because there is no piece where this move is from ({:?})",
                     self.from
                 );
-                return false;
+                return true;
             }
         };
 
@@ -312,7 +312,7 @@ impl CastleSide {
         }
     }
 
-    fn rook_start_col(&self) -> usize {
+    pub fn rook_start_col(&self) -> usize {
         match self {
             Self::KingSide => 7,
             Self::QueenSide => 0,

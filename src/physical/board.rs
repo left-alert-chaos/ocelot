@@ -82,7 +82,7 @@ impl PieceType {
 ///If self is white, return black. If self is black, return white.
 ///
 ///## home_rank(&self) -> usize
-///Returns the 0 or 7
+///Returns 0 or 7
 #[derive(Eq, PartialEq, Clone, Default, Copy)]
 pub enum Color {
     #[default]
@@ -125,6 +125,23 @@ impl Color {
         match self {
             Color::White => Color::Black,
             Color::Black => Color::White,
+        }
+    }
+    
+    pub fn from(repr: String) -> Result<Self, ()> {
+        match repr.chars().nth(0).unwrap() {
+            'w' => Ok(Self::White),
+            'b' => Ok(Self::Black),
+            _ => {
+                Err(())
+            }
+        }
+    }
+    
+    pub fn pawn_home_rank(&self) -> usize {
+        match self {
+            Color::White => 1,
+            Color::Black => 6,
         }
     }
 
@@ -357,7 +374,7 @@ impl Piece {
 ///Gets what round it will be next turn
 #[derive(Debug)]
 pub struct Board {
-    squares: [[Square; 8]; 8],
+    pub(crate) squares: [[Square; 8]; 8],
     pub(crate) locations: HashSet<Coordinate>, //stores locations of pieces
     pub(crate) turn: Color,
     pub(crate) round: i32, //the number of the set of 2 moves
@@ -392,7 +409,7 @@ impl PartialEq for Board {
             }
         }
 
-        true
+        self.squares == other.squares
     }
 }
 
