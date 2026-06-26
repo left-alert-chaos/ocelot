@@ -31,7 +31,7 @@ impl FromUCI for Move {
 
         //If this breaks, look at the if en_passant block in new()
         //assume en passant and if it isn't legal catch it in constructor
-        Ok(Self::new(from, to, &current_board.unwrap(), promotion, true))
+        Ok(Self::new(from, to, current_board.unwrap(), promotion, true))
     }
 }
 
