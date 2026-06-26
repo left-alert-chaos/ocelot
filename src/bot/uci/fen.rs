@@ -30,30 +30,25 @@ impl Board {
             let king_location = Coordinate::new(4, castle.player.home_rank());
 
             //make the king to have not moved
+            //get the king, set has_moved, and replace
             #[allow(unused_assignments)]
-            match new.mut_square(&king_location).piece {
-                //get the king, set has_moved, and replace
-                Some(piece) => {
-                    let mut king = piece;
-                    println!("Setting has_moved for piece at {king_location}");
-                    king.has_moved = false;
-                    new.put_piece_on(&king_location, king);
-                }
-                None => return,
+            if let Some(piece) = new.mut_square(&king_location).piece {
+                let mut king = piece;
+                println!("Setting has_moved for piece at {king_location}");
+                king.has_moved = false;
+                new.put_piece_on(&king_location, king);
             }
 
             //get rook position and make it to have not moved
             let rook_col = castle.side.rook_start_col();
             let rook_loc = Coordinate::new(rook_col, castle.player.home_rank());
-            match new.mut_square(&rook_loc).piece {
-                //get the rook, set has_moved, and replace
-                Some(piece) => {
-                    let mut rook = piece;
-                    println!("Setting has_moved for piece at {rook_loc}");
-                    rook.has_moved = false;
-                    new.put_piece_on(&rook_loc, rook);
-                }
-                None => return,
+
+            //get the rook, set has_moved, and replace
+            if let Some(piece) = new.mut_square(&rook_loc).piece {
+                let mut rook = piece;
+                println!("Setting has_moved for piece at {rook_loc}");
+                rook.has_moved = false;
+                new.put_piece_on(&rook_loc, rook);
             }
         };
 

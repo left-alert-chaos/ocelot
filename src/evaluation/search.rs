@@ -50,7 +50,7 @@ impl SearchTree {
     }
 
     fn best_move(&mut self) -> Result<Box<dyn Action>, ()> {
-        self.root.alphabeta(self.depth, f64::NEG_INFINITY, f64::INFINITY, true, true);
+        self.root.alphabeta(self.depth, f64::NEG_INFINITY, f64::INFINITY, true);
         
         //convert option to result
         match &self.root.best_move {
@@ -80,7 +80,7 @@ impl SearchNode {
         }
     }
 
-    fn alphabeta(&mut self, depth: i32, mut alpha: f64, mut beta: f64, maximizing_player: bool, is_root: bool) -> f64 {
+    fn alphabeta(&mut self, depth: i32, mut alpha: f64, mut beta: f64, maximizing_player: bool) -> f64 {
         //not the best solution, but it works
         let mut test_board = self.board.duplicate();
 
@@ -113,7 +113,7 @@ impl SearchNode {
                 let mut child = Self::new(child_board, self.player);
 
                 //recursion
-                let recursion_result = child.alphabeta(depth - 1, alpha, beta, false, false);
+                let recursion_result = child.alphabeta(depth - 1, alpha, beta, false);
                 value = max(value, recursion_result);
 
                 //handle best move logic
@@ -124,7 +124,7 @@ impl SearchNode {
                     best_value = Some(child.evaluate());
 
                     //put the child in a box haha
-                    self.best_child = Box::new(Some(child));
+                    *self.best_child = Some(child);
                     continue;
                 }
 
@@ -134,7 +134,7 @@ impl SearchNode {
                 if child.value >= unwrapped_best_value {
                     best_value = Some(child.value);
                     self.best_move = Some(action.duplicate());
-                    self.best_child = Box::new(Some(child));
+                    *self.best_child = Some(child);
                 }
 
                 //handle pruning
@@ -160,7 +160,7 @@ impl SearchNode {
                 let mut child = Self::new(child_board, self.player);
 
                 //recursion
-                let recursion_result = child.alphabeta(depth - 1, alpha, beta, true, false);
+                let recursion_result = child.alphabeta(depth - 1, alpha, beta, true);
                 value = min(value, recursion_result);
 
                 //find best child
@@ -169,7 +169,7 @@ impl SearchNode {
                     best_value = Some(child.evaluate());
 
                     //put the child in a box
-                    self.best_child = Box::new(Some(child));
+                    *self.best_child = Some(child);
                     continue;
                 }
 
@@ -179,7 +179,7 @@ impl SearchNode {
                 if child.value >= unwrapped_best_value {
                     best_value = Some(child.value);
                     self.best_move = Some(action.duplicate());
-                    self.best_child = Box::new(Some(child));
+                    *self.best_child = Some(child);
                 }
 
                 if value <= alpha {
