@@ -69,7 +69,7 @@ pub struct SearchNode {
 }
 
 impl SearchNode {
-    fn new(game: Board, player: board::Color) -> Self {
+    fn new(mut game: Board, player: board::Color) -> Self {
         let value = game.evaluation();
         Self {
             board: game,
@@ -193,7 +193,7 @@ impl SearchNode {
         value
     }
 
-    fn evaluate(&self) -> f64 {
+    fn evaluate(&mut self) -> f64 {
         self.board.evaluation() * self.player.value() as f64
     }
 }
@@ -267,6 +267,6 @@ mod tests {
 
 impl fmt::Debug for SearchNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SearchNode with value {}, board evaluation {}, and position:\n{}", self.value, self.board.evaluation(), self.board.draw())
+        write!(f, "SearchNode with value {}, and position:\n{}", self.value, self.board.draw())
     }
 }
