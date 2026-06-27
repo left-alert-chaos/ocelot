@@ -2,6 +2,7 @@
 **/__pycache__
 **/__cache__
 **/line_counter.py
+src/.tui/
 
 
 # Added by cargo

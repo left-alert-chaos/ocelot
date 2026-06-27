@@ -3,7 +3,7 @@
 //!the UCI implementation.
 
 mod uci;
-pub use uci::ToUCI;
+pub use uci::*;
 use crate::physical::*;
 use crate::evaluation::SearchTree;
 use std::io;
@@ -25,7 +25,7 @@ impl EngineOptions {
 ///generate the best move for the player the bot is assigned.
 pub struct Ocelot {
     pub(crate) board: Board,
-    depth: i32,
+    pub(crate) depth: i32,
     ponder: Option<Box<dyn Action>>,
 }
 

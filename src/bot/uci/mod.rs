@@ -27,8 +27,8 @@ impl ToUCI for Move {
 #[allow(refining_impl_trait)]
 impl FromUCI for Move {
     fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
-        if representation.len() > 5 || representation.len() < 4 {
-            return Err(())
+        if representation.len() > 5 || representation.len() < 4 || representation.contains(" ") {
+            return Err(());
         }
 
         let from = Coordinate::from(&mut representation);
@@ -50,12 +50,8 @@ impl FromUCI for Move {
 #[allow(refining_impl_trait)]
 impl FromUCI for Castle {
     fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
-        if representation.len() != 4 {
-            return Err(())
-        }
-
-        if representation.chars().nth(0).unwrap() != 'e' {
-            return Err(())
+        if representation.chars().nth(0).unwrap() != 'e' || representation.len() != 4 || representation.contains(" ") {
+            return Err(());
         }
 
         let king_loc = Coordinate::from(&mut representation);
@@ -65,7 +61,7 @@ impl FromUCI for Castle {
             0 => board::Color::White,
             7 => board::Color::Black,
             _ => {
-                return Err(())
+                return Err(());
             }
         };
 
@@ -107,6 +103,19 @@ pub fn parse_action(representation: String, current_board: &mut Board) -> Box<dy
     
     let m = Move::parse(representation, current_board).unwrap();
     m
+}
+
+///Like parse_action, but doesn't call unwrap()
+pub fn safe_parse_action(representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
+    if let Ok(c) = Castle::parse(representation.clone(), current_board) {
+        return Ok(c);
+    }
+
+    if let Ok(m) = Move::parse(representation, current_board) {
+        return Ok(m);
+    }
+    
+    Err(())
 }
 
 #[cfg(test)]

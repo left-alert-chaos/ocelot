@@ -1,6 +1,7 @@
 mod physical;
 mod evaluation;
 mod bot;
+mod tui;
 use bot::Ocelot;
 use physical::*;
 use std::env;
@@ -24,6 +25,8 @@ fn main() {
 
     if args.contains(&String::from("--demo")) {
         demo(depth);
+    } else if args.contains(&String::from("--tui")) {
+        tui::mainloop(depth);
     } else {
         uci(depth);
     }

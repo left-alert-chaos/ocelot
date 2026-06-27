@@ -578,7 +578,7 @@ impl Board {
     }
 
     pub fn draw(&self) -> String {
-        let mut output = String::from("   a  b  c  d  e  f  g  h");
+        let mut output = String::from("  a  b  c  d  e  f  g  h");
 
         //don't use for loop because decreasing ranges are hard
         let mut row: i32 = 7;
