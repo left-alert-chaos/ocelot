@@ -5,6 +5,24 @@
 use crate::physical::*;
 
 impl Board {
+    pub fn evaluation(&mut self) -> f64 {
+        if self.is_checkmate(board::Color::White) {
+            return f64::NEG_INFINITY; //black winning
+        } else if self.is_checkmate(board::Color::Black) {
+            return f64::INFINITY; //white winning
+        }
+
+        //base heuristic is just white material minus black material
+        let mut valuation = self.white_material() as f64;
+        valuation -= self.black_material() as f64;
+        
+        //do various heuristic checks
+        valuation += self.pawns_in_center();
+        valuation += self.can_castle();
+
+        valuation
+    }
+
     fn white_material(&self) -> i32 {
         let pieces = self.white_pieces();
         let mut value = 0;
@@ -24,7 +42,7 @@ impl Board {
     }
     
     //check if there are pawns in the center, and give a score for it.
-    pub fn pawns_in_center(&self) -> f64 {
+    fn pawns_in_center(&self) -> f64 {
         let mut value = 0.0;
 
         for col in 3..=4 {
@@ -46,20 +64,28 @@ impl Board {
         value
     }
 
-    pub fn evaluation(&self) -> f64 {
-        if self.is_checkmate(board::Color::White) {
-            return f64::NEG_INFINITY; //black winning
-        } else if self.is_checkmate(board::Color::Black) {
-            return f64::INFINITY; //white winning
+    //see which castles are legal
+    fn can_castle(&mut self) -> f64 {
+        let mut value = 0.0;
+
+        let mut white_queenside = Castle::new(CastleSide::QueenSide, board::Color::White);
+        let mut black_queenside = Castle::new(CastleSide::QueenSide, board::Color::Black);
+        let mut white_kingside = Castle::new(CastleSide::KingSide, board::Color::White);
+        let mut black_kingside = Castle::new(CastleSide::KingSide, board::Color::Black);
+
+        if !white_queenside.is_illegal(self) {
+            value += 1.0;
+        }
+        if !black_queenside.is_illegal(self) {
+            value -= 1.0;
+        }
+        if !white_kingside.is_illegal(self) {
+            value += 1.0;
+        }
+        if !black_kingside.is_illegal(self) {
+            value -= 1.0;
         }
 
-        //base heuristic is just white material minus black material
-        let mut valuation = self.white_material() as f64;
-        valuation -= self.black_material() as f64;
-        
-        //do various heuristic checks
-        valuation += self.pawns_in_center();
-
-        valuation
+        value
     }
 }

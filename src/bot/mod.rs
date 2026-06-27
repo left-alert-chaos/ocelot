@@ -7,9 +7,9 @@ pub use uci::ToUCI;
 use crate::physical::*;
 use crate::evaluation::SearchTree;
 use std::io;
-use std::fs;
 
 //TODO: add config options
+#[allow(dead_code)]
 struct EngineOptions {
 
 }
@@ -26,7 +26,6 @@ impl EngineOptions {
 pub struct Ocelot {
     pub(crate) board: Board,
     depth: i32,
-    options: EngineOptions,
     ponder: Option<Box<dyn Action>>,
 }
 
@@ -35,7 +34,6 @@ impl Ocelot {
         Self {
             board: board.duplicate(),
             depth,
-            options: EngineOptions::new(),
             ponder: None,
         }
     }
@@ -135,6 +133,18 @@ impl Ocelot {
         let result = Board::parse(repr.to_string());
         if let Ok(board) = result {
             self.board = board;
+        }
+
+        //get listed moves
+        if repr.contains("moves") {
+            let mut halves = repr.split("moves");
+
+            let move_reprs = halves.nth(1).unwrap().split_whitespace();
+
+            for move_repr in move_reprs {
+                let action = uci::parse_action(move_repr.to_string().trim().to_string(), &mut self.board);
+                self.perform_on_self(action);
+            }
         }
     }
 }

@@ -100,14 +100,12 @@ pub fn parse_action(representation: String, current_board: &mut Board) -> Box<dy
     //try generating a castle. If that doesn't work, make a Move
     let castle = Castle::parse(representation.clone(), current_board);
     if let Ok(c) = castle {
-        println!("uci::parse_action(): Returning caslte {c}");
         return c;
     }
 
     //otherwise, create a move
     
     let m = Move::parse(representation, current_board).unwrap();
-    println!("uci::parse_action(): Returing move {m}");
     m
 }
 

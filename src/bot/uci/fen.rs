@@ -7,6 +7,10 @@ use crate::physical::*;
 #[allow(refining_impl_trait)]
 impl Board {
     pub fn parse(representation: String) -> Result<Board, ()> {
+        if representation.starts_with("startpos") {
+            return Ok(Default::default());
+        }
+
         let mut new = Board::new();
 
         //closure to automate placement

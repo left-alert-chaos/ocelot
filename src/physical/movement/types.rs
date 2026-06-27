@@ -106,12 +106,14 @@ impl Action for Move {
         //if is 2 square pawn move, set en passant-ability
         if moving_piece.ptype.value() == 1 && self.is_two_square_pawn_move() {
             //if white, black captures on same turn. If black, white captures next round
+            /*
             let turn = if moving_piece.color == board::Color::White {
                 game.round
             } else {
                 game.round + 1
             };
-            moving_piece.ptype = board::PieceType::Pawn(turn);
+            */
+            moving_piece.ptype = board::PieceType::Pawn(game.round);
         }
 
         //perform move
@@ -234,21 +236,24 @@ impl Move {
         let en_passant_location = if en_passant {
             //direction of en passant, NOT pawn movement direction.
             let direction: i32 = if from.row < to.row { -1 } else { 1 };
-            let loc = to.with_offset(direction, 0).unwrap();
-            
-            //check if can be en passant'ed
-            match game.square(&loc).piece {
-                Some(piece) => {
-                    //can it be en passant'ed this turn?
-                    if piece.ptype == board::PieceType::Pawn(game.round) && Some(piece.color) != moving_piece_color {
-                        Some(loc)
-                    } else {
+
+            if let Ok(loc) = to.with_offset(direction, 0) {
+                //check if can be en passant'ed
+                match game.square(&loc).piece {
+                    Some(piece) => {
+                        //can it be en passant'ed this turn?
+                        if piece.ptype == board::PieceType::Pawn(game.round) && Some(piece.color) != moving_piece_color {
+                            Some(loc)
+                        } else {
+                            None
+                        }
+                    }
+                    None => {
                         None
                     }
                 }
-                None => {
-                    None
-                }
+            } else {
+                None
             }
         } else {
             None
@@ -375,6 +380,12 @@ impl Action for Castle {
 
         game.move_from(&king_pos, &king_target);
         game.move_from(&rook_pos, &rook_target);
+
+        //increment round
+        game.turn = game.square(&rook_target).piece.unwrap().color.opposite();
+        if game.turn == board::Color::White {
+            game.round += 1;
+        }
         game.update();
     }
 
@@ -389,6 +400,12 @@ impl Action for Castle {
 
         game.move_from(&king_pos, &king_target);
         game.move_from(&rook_pos, &rook_target);
+
+        //de-increment round
+        game.turn = game.turn.opposite();
+        if game.turn == board::Color::Black {
+            game.round -= 1;
+        }
 
         //reset has_moved
         game.mut_square(&king_target).piece.unwrap().has_moved = false;
