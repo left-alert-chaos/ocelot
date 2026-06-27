@@ -3,6 +3,7 @@
 
 use crate::physical::*;
 use std::fmt;
+use std::process::exit;
 
 pub struct SearchTree {
     pub(crate) root: SearchNode,
@@ -29,6 +30,12 @@ impl SearchTree {
         //otherwise, find best legal move
         let mut board = self.root.board.duplicate();
         let mut potential_moves = if self.root.player == board::Color::White {board.white_potential_moves()} else {board.black_potential_moves()};
+
+        //end of game?
+        if potential_moves.len() == 0 {
+            println!("\x1b[?1049lThe engine has no legal moves!");
+            exit(0);
+        }
 
         //look at all legal moves
         let mut best_value = potential_moves[0].evaluate();
