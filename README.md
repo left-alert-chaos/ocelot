@@ -9,7 +9,7 @@
 Ocelot has a bunch of features, including:
 - Simple UCI implementation: compatible with most GUIs
 - Built-in TUI: works out-of-the-box
-- Efficient search algorithm: Finds moves in about ~3.5 seconds
+- Efficient search algorithm: Finds moves in about ~3.5 seconds (on my laptop's performance mode)
 
 # Usage
 To use Ocelot with a 3rd-party user interface in UCI mode, just start it from the command line.
