@@ -2,7 +2,7 @@
 name = "ocelot-chess"
 version = "0.1.1"
 edition = "2024"
-license-file = "LICENSE"
+license = "MIT"
 authors = ["left-alert-chaos"]
 description = "A simple(ish) chess engine written entirely in Rust with no dependencies."
 readme = "README.md"
