@@ -24,7 +24,9 @@ fn main() {
         }
     }
 
-    if args.contains(&String::from("--demo")) {
+    if args.contains(&String::from("--help")) {
+        help();
+    } else if args.contains(&String::from("--demo")) {
         demo(depth);
     } else if args.contains(&String::from("--tui")) {
         tui::mainloop(depth);
@@ -64,4 +66,15 @@ fn demo(depth: i32) {
         black_engine.perform_on_self(black_move);
         println!("Black in check: {}", b.is_check(board::Color::Black));
     }
+}
+
+fn help() {
+    println!("ocelot-chess is a simple chess engine written from scratch with no dependencies. Flags:
+    --tui - starts the built-in TUI.
+    --demo - runs a chaotic demo of two Ocelots playing against each other.
+    --help - prints this message.
+
+    If no flags are supplied, the engine starts in UCI mode.
+    You can supply a number as an argument and that will be the engine's depth.
+    ");
 }

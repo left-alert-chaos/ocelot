@@ -9,7 +9,7 @@
 Ocelot has a bunch of features, including:
 - Simple UCI implementation: compatible with most GUIs
 - Built-in TUI: works out-of-the-box
-- Efficient search algorithm: Finds moves in about ~3.5 seconds
+- Efficient search algorithm: Finds moves in about ~3.5 seconds (on my laptop's performance mode)
 
 # Usage
 To use Ocelot with a 3rd-party user interface in UCI mode, just start it from the command line.
@@ -57,3 +57,7 @@ As I mentioned above, Ocelot doesn't have any dependencies. However, that doesn'
 - [Wikipedia](https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning#Pseudocode), especially the linked page, was a cheat code. My search algorithm is essentially their pseudocode translated to Rust.
 - Honorable mention to the ever-invaluable [ansi code cheatsheet from ConnerWill](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b).
 - I used [CuteChess](cutechess.com) to test the engine against me/itself. Worked great!
+- Rust's documentation is super helpful, and some of my variable names are stolen from it.
+
+# AI
+No AI was used for programming this project. All code is my own. I used the Google AI Overview for researching on occaision.
