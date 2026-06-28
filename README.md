@@ -1,14 +1,15 @@
 <div style="text-align: center">
     <h1>Ocelot</h1>
-    <p>Ocelot is a chess engine that implements the Universal Chess Interface.</p>
+    <p>Ocelot is a chess engine written from scratch with no dependencies.</p>
     <img src="assets/tui.png" />
+    <h2><b><a href="https://crates.io/crates/ocelot-chess/0.1.1">Try it</a></b></h2>
 </div>
 
 # Features
 Ocelot has a bunch of features, including:
 - Simple UCI implementation: compatible with most GUIs
 - Built-in TUI: works out-of-the-box
-- Efficient search algorithm: Finds moves in about 7.5 seconds
+- Efficient search algorithm: Finds moves in about ~3.5 seconds
 
 # Usage
 To use Ocelot with a 3rd-party user interface in UCI mode, just start it from the command line.
@@ -18,6 +19,25 @@ If you pass a number as an argument, it sets the engine's depth to that number.
 ## Flags
 - `--tui` Launches the engine using its built-in TUI. If you don't have a GUI, use this option.
 - `--demo` Two instances of the engine play each other. It gets... chaotic...
+
+So to start a TUI session, just type `ocelot-chess --tui`.
+
+# Quick start
+To install Ocelot, first make sure you have Cargo installed. It should work with most recent Rust versions.
+
+Then, just run the following command:
+
+```Shell
+cargo install ocelot-chess
+```
+
+You should then be able to run it with the `ocelot-chess` command. If that didn't work, it's probably because Cargo's `bin` directory isn't in your PATH. To fix this on Linux or MacOS, run this command:
+
+```Shell
+export PATH="$PATH:$HOME/.cargo/bin/"
+```
+
+Please note that this fix isn't permanent. If you restart your shell, you will need to run it again.
 
 # How the cat runs
 Ocelot doesn't use any 3rd-party libraries. Its only dependency is the Rust standard library.
@@ -36,3 +56,4 @@ As I mentioned above, Ocelot doesn't have any dependencies. However, that doesn'
 - The [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page) was extraordinarily helpful when researching search algorithms and how chess engines are built in general.
 - [Wikipedia](https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning#Pseudocode), especially the linked page, was a cheat code. My search algorithm is essentially their pseudocode translated to Rust.
 - Honorable mention to the ever-invaluable [ansi code cheatsheet from ConnerWill](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b).
+- I used [CuteChess](cutechess.com) to test the engine against me/itself. Worked great!
