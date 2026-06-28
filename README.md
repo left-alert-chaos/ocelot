@@ -1,7 +1,7 @@
 <div style="text-align: center">
     <h1>Ocelot</h1>
     <p>Ocelot is a chess engine that implements the Universal Chess Interface.</p>
-    <img src="assets/board.png" />
+    <img src="assets/tui.png" />
 </div>
 
 # Features

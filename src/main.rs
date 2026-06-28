@@ -8,6 +8,7 @@ use std::env;
 
 //parse args
 fn main() {
+    //default depth
     let mut depth = 5;
 
     let args: Vec<_> = env::args().collect();

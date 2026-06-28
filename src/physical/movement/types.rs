@@ -8,7 +8,7 @@ use crate::bot::ToUCI;
 ///# Action
 ///Implemented by Move and Castle.
 ///Display should display the classical coordinate instead of 0-indexed coordinate.
-pub trait Action: fmt::Debug + fmt::Display + ToUCI {
+pub trait Action: fmt::Debug + fmt::Display + ToUCI + Send {
     fn perform_on(&mut self, game: &mut Board); //requires mutablility because it records capture
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);

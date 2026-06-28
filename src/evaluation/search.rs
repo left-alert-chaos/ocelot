@@ -4,9 +4,11 @@
 use crate::physical::*;
 use std::fmt;
 use std::process::exit;
+use std::sync::mpsc;
+use std::thread;
 
 pub struct SearchTree {
-    pub(crate) root: SearchNode,
+    pub(crate) root: TreeRoot,
     depth: i32,
 }
 
@@ -16,7 +18,7 @@ impl SearchTree {
         let turn = game.turn;
 
         Self {
-            root: SearchNode::new(game, turn),
+            root: TreeRoot::new(game, turn),
             depth,
         }
     } 
@@ -57,13 +59,98 @@ impl SearchTree {
     }
 
     fn best_move(&mut self) -> Result<Box<dyn Action>, ()> {
-        self.root.alphabeta(self.depth, f64::NEG_INFINITY, f64::INFINITY, true);
+        self.root.alphabeta(self.depth, f64::NEG_INFINITY, f64::INFINITY);
         
         //convert option to result
         match &self.root.best_move {
             Some(best_move) => Ok(best_move.duplicate()),
             None => Err(()),
         }
+    }
+}
+
+///This struct stores info about child nodes, the move that led to them, and value. It is used to
+///pass data between threads.
+struct ThreadInfo {
+    node: SearchNode,
+    value: f64,
+    action: Box<dyn Action>,
+}
+
+///This is distinct from SearchNode in that it holds nodes, but it doesn't create more of itself.
+///Instead, it creates child nodes in their own threads. It only works as the maximizing player.
+pub struct TreeRoot {
+    board: Board,
+    pub(crate) best_move: Option<Box<dyn Action>>,
+    pub(crate) best_child: Box<Option<SearchNode>>,
+    player: board::Color,
+}
+
+impl TreeRoot {
+    fn new(board: Board, turn: board::Color) -> Self {
+        Self {
+            board: board,
+            best_move: None,
+            best_child: Box::new(None),
+            player: turn,
+        }
+    }
+
+    fn alphabeta(&mut self, depth: i32, alpha: f64, beta: f64) {
+        let mut test_board = self.board.duplicate();
+
+        let potential_moves = if self.board.turn == board::Color::White {&self.board.move_info.white_potential_moves} else {&self.board.move_info.black_potential_moves};
+        let (transmitter, reciever) = mpsc::channel::<ThreadInfo>();
+
+        //dispatch all threads
+        for m in potential_moves {
+            let mut action = m.duplicate();
+            if action.is_illegal(&mut test_board) {
+                continue;
+            }
+
+
+            let mut child_board = self.board.duplicate();
+            action.perform_on(&mut child_board);
+            let child = SearchNode::new(child_board, self.player);
+            let child_transmitter = transmitter.clone();
+
+            thread::spawn(move || Self::child_alphabeta_wrapper(child, child_transmitter, action, depth - 1, alpha, beta));
+        }
+
+        //if this isn't dropped, the loop never exits
+        drop(transmitter);
+
+        //read results
+        let mut best_value: Option<f64> = None;
+        for info in reciever {
+            //if no results yet, prepopulate
+            if self.best_move.is_none() {
+                self.best_move = Some(info.action);
+                *self.best_child = Some(info.node);
+                best_value = Some(info.value);
+                continue;
+            }
+
+            //otherwise, check if best
+            if info.value >= best_value.unwrap() {
+                best_value = Some(info.value);
+                self.best_move = Some(info.action);
+                *self.best_child = Some(info.node);
+            }
+        }
+    }
+
+    //gets child alphabeta value and sends to channel
+    fn child_alphabeta_wrapper(mut child: SearchNode, sender: mpsc::Sender<ThreadInfo>, action: Box<dyn Action>, depth: i32, alpha: f64, beta: f64) {
+        let value = child.alphabeta(depth, alpha, beta, false);
+        let info = ThreadInfo {
+            node: child,
+            value,
+            action,
+        };
+
+        let _ = sender.send(info);
     }
 }
 
@@ -226,6 +313,7 @@ mod tests {
     use super::*;
 
     #[test]
+    //test whether the search tree decides to take a hanging queen
     fn take_queen() {
         let mut b = Board::new();
         b.turn = board::Color::Black;
