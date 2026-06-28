@@ -9,7 +9,11 @@ readme = "README.md"
 repository = "https://github.com/left-alert-chaos/ocelot"
 keywords = ["chess"]
 categories = ["chess-engines"]
-exclude = ["target"]
 homepage = "https://github.com/left-alert-chaos/ocelot"
+exclude = [
+	"assets",
+	".github",
+	"target"
+]
 
 [dependencies]
