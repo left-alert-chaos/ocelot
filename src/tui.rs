@@ -21,10 +21,13 @@ impl Board {
     }
 }
 
+///Stores the persistent state of the interface, including latest move and whether to exit
 struct TUIState {
     board: Board,
     engine: Ocelot,
     error: String,
+    to_exit: bool,
+    engine_last_move: Option<Box<dyn Action>>,
 }
 
 impl TUIState {
@@ -45,8 +48,13 @@ impl TUIState {
         //error
         println!("\x1b[1;31m{}\x1b[0m", self.error);
 
-        //draw board and return cursor to input location
-        println!("{}\x1b[1A", self.board.draw_ascii(70, 4));
+        let engine_move = match &self.engine_last_move {
+            Some(m) => m.generate(),
+            None => String::from("none"),
+        };
+
+        //draw board and engine move and return cursor to input location
+        println!("{}\x1b[22;70HEngine move: {engine_move}\x1b[3A", self.board.draw_ascii(70, 4));
 
         self.error = String::new();
     }
@@ -61,11 +69,26 @@ pub fn mainloop(depth: i32) {
         engine: Ocelot::new(&board, depth),
         board,
         error: String::new(),
+        to_exit: false,
+        engine_last_move: None,
     };
 
 
     //actual main loop
     loop {
+        //check if player has moves
+        let mut player_moves = state.board.white_potential_moves();
+        player_moves.retain_mut(|x| !x.is_illegal(&mut state.board));
+        if player_moves.len() == 0 {
+            state.error = if state.board.is_check(board::Color::White) {
+                String::from("You were checkmated!")
+            } else {
+                String::from("Stalemate!")
+            };
+
+            state.to_exit = true;
+        }
+        
         //render
         state.render();
 
@@ -73,6 +96,10 @@ pub fn mainloop(depth: i32) {
         let mut input = String::new();
         let _ = io::stdin().read_line(&mut input);
         input = input.trim().to_string();
+
+        if state.to_exit {
+            break;
+        }
 
         //filter empty lines
         if input == String::from("") {
@@ -94,12 +121,27 @@ pub fn mainloop(depth: i32) {
             user_action.perform_on(&mut state.board);
             state.engine.perform_on_self(user_action);
 
+            //check if engine has moves
+            let mut engine_moves = state.board.black_potential_moves();
+            engine_moves.retain_mut(|x| !x.is_illegal(&mut state.board));
+            if engine_moves.len() == 0 {
+                state.error = if state.board.is_check(board::Color::Black) {
+                    String::from("You checkmated Ocelot!")
+                } else {
+                    String::from("Stalemate!")
+                };
+
+                state.to_exit = true;
+                continue;
+            }
+
             state.error = String::from("Engine is thinking...");
             state.render();
 
             let mut engine_move = state.engine.safe_best_move();
             engine_move.perform_on(&mut state.board);
-            state.engine.perform_on_self(engine_move);
+            state.engine.perform_on_self(engine_move.duplicate());
+            state.engine_last_move = Some(engine_move);
         } else {
             //bad move
             state.error = String::from("Couldn't parse that move!");
