@@ -8,7 +8,7 @@ description = "A simple(ish) chess engine written entirely in Rust with no depen
 readme = "README.md"
 repository = "https://github.com/left-alert-chaos/ocelot"
 keywords = ["chess"]
-categories = ["chess-engines"]
+categories = ["games"]
 homepage = "https://github.com/left-alert-chaos/ocelot"
 exclude = [
 	"assets",
