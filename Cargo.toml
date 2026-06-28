@@ -1,6 +1,6 @@
 [package]
 name = "ocelot-chess"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license-file = "LICENSE"
 authors = ["left-alert-chaos"]
@@ -13,7 +13,8 @@ homepage = "https://github.com/left-alert-chaos/ocelot"
 exclude = [
 	"assets",
 	".github",
-	"target"
+	"target",
+	"install.sh",
 ]
 
 [dependencies]
