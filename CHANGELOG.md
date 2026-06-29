@@ -1,6 +1,15 @@
 # Changelog
 This file will be used to track changes from Ocelot version `0.1.1` onward.
 
+## 0.1.2
+This patch is one of version `0.1`, and overall release number 3.
+
+Another minor patch, simply adding a help menu.
+
+### Changes
+- Added `--help` option to display usage information for the CLI.
+- Set `license` field in manifest, so the license shows up as MIT now.
+
 ## 0.1.1
 This is patch one of version `0.1`, and overall release number 2.
 
