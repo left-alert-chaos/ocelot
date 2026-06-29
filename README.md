@@ -2,7 +2,7 @@
     <h1>Ocelot</h1>
     <p>Ocelot is a chess engine written from scratch with no dependencies.</p>
     <img src="assets/tui.png" />
-    <h2><b><a href="https://crates.io/crates/ocelot-chess/0.1.1">Try it</a></b></h2>
+    <h2><b><a href="https://crates.io/crates/ocelot-chess/">Try it</a></b></h2>
 </div>
 
 # Features
