@@ -21,7 +21,7 @@ impl SearchTree {
 
         //only allow 20 seconds
         if time == f64::INFINITY {
-            time = 15.0;
+            time = 20.0;
         }
 
         Self {
@@ -106,6 +106,7 @@ impl TreeRoot {
 
     fn alphabeta(&mut self, depth: i32, alpha: f64, beta: f64, max_time: f64) {
         let start = Instant::now();
+
         let mut test_board = self.board.duplicate();
 
         let potential_moves = if self.board.turn == board::Color::White {&self.board.move_info.white_potential_moves} else {&self.board.move_info.black_potential_moves};
@@ -185,14 +186,17 @@ impl SearchNode {
         }
     }
 
+    fn subjective_value(&self) -> f64 {
+        self.value * (self.player.value() as f64)
+    }
+
     fn alphabeta(&mut self, depth: i32, absolute_depth: i32, mut alpha: f64, mut beta: f64, maximizing_player: bool, max_time: f64, start: Instant) -> f64 {
         //not the best solution, but it works
         let mut test_board = self.board.duplicate();
 
         //end of game or tree
         if depth == 0 || self.value == f64::INFINITY || self.value == f64::NEG_INFINITY || start.elapsed().as_micros() / 1000000 >= max_time as u128 {
-            let result = self.value * (self.player.value() as f64);
-            return result;
+            return self.subjective_value();
         }
 
         //get potential moves
