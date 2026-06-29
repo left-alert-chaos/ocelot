@@ -150,7 +150,9 @@ impl TreeRoot {
             action,
         };
 
-        let _ = sender.send(info);
+        if sender.send(info).is_err() {
+            eprintln!("TreeRoot::child_alphabeta_wrapper(): sender.send(info) returned Err()!");
+        }
     }
 }
 
