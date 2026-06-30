@@ -132,6 +132,7 @@ impl Ocelot {
     }
 
     fn position(&mut self, repr: &str) {
+        let repr = repr.replace("fen ", "");
         let result = Board::parse(repr.to_string());
         if let Ok(board) = result {
             self.board = board;

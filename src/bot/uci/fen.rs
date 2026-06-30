@@ -177,6 +177,7 @@ impl Board {
         }
 
         new.turn = turn;
+
         Ok(new)
     }
 }
