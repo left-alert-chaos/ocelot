@@ -197,6 +197,11 @@ impl SearchNode {
         //get potential moves
         let potential_moves = if self.board.turn == board::Color::White {&self.board.move_info.white_potential_moves} else {&self.board.move_info.black_potential_moves};
 
+        //stalemate
+        if potential_moves.len() == 0 {
+            return 0.0;
+        }
+
         let mut value: f64;
 
         //create child, play move, get value
