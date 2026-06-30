@@ -38,7 +38,7 @@ fn main() {
 //start a UCI bot
 fn uci(depth: i32) {
     let b: Board = Default::default();
-    let mut engine = Ocelot::new(&b, depth, f64::INFINITY);
+    let mut engine = Ocelot::new(&b, depth, 10.0);
     engine.uci_loop();
 }
 
