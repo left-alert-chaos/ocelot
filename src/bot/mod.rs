@@ -27,14 +27,16 @@ pub struct Ocelot {
     pub(crate) board: Board,
     pub(crate) depth: i32,
     ponder: Option<Box<dyn Action>>,
+    allowed_time: f64,
 }
 
 impl Ocelot {
-    pub fn new(board: &Board, depth: i32) -> Self {
+    pub fn new(board: &Board, depth: i32, allowed_time: f64) -> Self {
         Self {
             board: board.duplicate(),
             depth,
             ponder: None,
+            allowed_time,
         }
     }
 
@@ -42,7 +44,7 @@ impl Ocelot {
     ///legal one.
     ///Remember that this doesn't apply the move, just generates it.
     pub fn safe_best_move(&mut self) -> Box<dyn Action> {
-        let mut tree = SearchTree::new(&self.board, self.depth);
+        let mut tree = SearchTree::new(&self.board, self.depth, self.allowed_time);
         tree.safe_best_move()
     }
 
@@ -110,7 +112,7 @@ impl Ocelot {
 
     //get the move and play it
     fn go(&mut self, _command: &str) {
-        let mut tree = SearchTree::new(&self.board, self.depth);
+        let mut tree = SearchTree::new(&self.board, self.depth, self.allowed_time);
         let mut best_move = tree.safe_best_move();
         let maybe_best_position = tree.root.best_child;
 
@@ -130,6 +132,7 @@ impl Ocelot {
     }
 
     fn position(&mut self, repr: &str) {
+        let repr = repr.replace("fen ", "");
         let result = Board::parse(repr.to_string());
         if let Ok(board) = result {
             self.board = board;

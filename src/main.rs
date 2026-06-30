@@ -38,7 +38,7 @@ fn main() {
 //start a UCI bot
 fn uci(depth: i32) {
     let b: Board = Default::default();
-    let mut engine = Ocelot::new(&b, depth);
+    let mut engine = Ocelot::new(&b, depth, 10.0);
     engine.uci_loop();
 }
 
@@ -46,8 +46,8 @@ fn demo(depth: i32) {
     let b: Board = Default::default();
 
     println!("Depth: {depth}");
-    let mut white_engine = Ocelot::new(&b, depth);
-    let mut black_engine = Ocelot::new(&b, depth);
+    let mut white_engine = Ocelot::new(&b, depth, 4.0);
+    let mut black_engine = Ocelot::new(&b, depth, 4.0);
 
     println!("This demo will play a game between equally-strengthed White and Black players until you kill the program. It gets chaotic and a little illegal!");
     

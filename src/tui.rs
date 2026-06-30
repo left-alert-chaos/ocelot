@@ -66,7 +66,7 @@ pub fn mainloop(depth: i32) {
     let board = Default::default();
 
     let mut state = TUIState {
-        engine: Ocelot::new(&board, depth),
+        engine: Ocelot::new(&board, depth, 8.0),
         board,
         error: String::new(),
         to_exit: false,
