@@ -19,11 +19,6 @@ impl SearchTree {
         let game = game.duplicate();
         let turn = game.turn;
 
-        //only allow 20 seconds
-        if time == f64::INFINITY {
-            time = 20.0;
-        }
-
         Self {
             root: TreeRoot::new(game, turn),
             depth,
