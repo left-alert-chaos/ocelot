@@ -2,8 +2,8 @@
 //!This module holds logic for generating moves. The logic is all in an impl block for
 //!crate::physical::board::Piece.
 
-use crate::physical::board::{self, Coordinate, Piece, Board};
-use crate::physical::movement::{Action, Move, Castle, types::CastleSide};
+use crate::physical::board::{self, Board, Coordinate, Piece};
+use crate::physical::movement::{Action, Castle, Move, types::CastleSide};
 
 //seperate impl for move generation
 #[allow(dead_code)]

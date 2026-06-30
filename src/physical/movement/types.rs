@@ -1,9 +1,9 @@
 //!# types
 //!This module holds structs and enums used for movement.
 
-use std::fmt;
-use crate::physical::board::{self, Board, Coordinate, Piece};
 use crate::bot::ToUCI;
+use crate::physical::board::{self, Board, Coordinate, Piece};
+use std::fmt;
 
 ///# Action
 ///Implemented by Move and Castle.
@@ -38,17 +38,17 @@ pub struct Move {
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Move from {} to {}",
-            self.from, self.to
-        )
+        write!(f, "Move from {} to {}", self.from, self.to)
     }
 }
 
 impl fmt::Debug for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Move from {:?} to {:?} with value {} [DEBUG]", self.from, self.to, self.value)
+        write!(
+            f,
+            "Move from {:?} to {:?} with value {} [DEBUG]",
+            self.from, self.to, self.value
+        )
     }
 }
 
@@ -192,14 +192,11 @@ impl Action for Move {
             game.put_piece_on(&self.to, restored_piece);
         }
 
-
         game.update();
     }
 
     fn duplicate(&self) -> Box<dyn Action> {
-        Box::new(Self {
-            ..*self
-        })
+        Box::new(Self { ..*self })
     }
 
     fn evaluate(&self) -> f64 {
@@ -242,15 +239,15 @@ impl Move {
                 match game.square(&loc).piece {
                     Some(piece) => {
                         //can it be en passant'ed this turn?
-                        if piece.ptype == board::PieceType::Pawn(game.round) && Some(piece.color) != moving_piece_color {
+                        if piece.ptype == board::PieceType::Pawn(game.round)
+                            && Some(piece.color) != moving_piece_color
+                        {
                             Some(loc)
                         } else {
                             None
                         }
                     }
-                    None => {
-                        None
-                    }
+                    None => None,
                 }
             } else {
                 None
@@ -477,9 +474,7 @@ impl Action for Castle {
     }
 
     fn duplicate(&self) -> Box<dyn Action> {
-        Box::new(Self {
-            ..*self
-        })
+        Box::new(Self { ..*self })
     }
 
     fn evaluate(&self) -> f64 {
@@ -557,4 +552,3 @@ impl MoveInfo {
         }
     }
 }
-

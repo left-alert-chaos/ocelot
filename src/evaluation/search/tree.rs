@@ -24,7 +24,7 @@ impl SearchTree {
             depth,
             allowed_time: time,
         }
-    } 
+    }
 
     pub fn safe_best_move(&mut self) -> Box<dyn Action> {
         let search_result = self.best_move();
@@ -34,7 +34,11 @@ impl SearchTree {
 
         //otherwise, find best legal move
         let mut board = self.root.board.duplicate();
-        let mut potential_moves = if self.root.player == board::Color::White {board.white_potential_moves()} else {board.black_potential_moves()};
+        let mut potential_moves = if self.root.player == board::Color::White {
+            board.white_potential_moves()
+        } else {
+            board.black_potential_moves()
+        };
 
         //end of game?
         if potential_moves.len() == 0 {
@@ -62,8 +66,13 @@ impl SearchTree {
     }
 
     fn best_move(&mut self) -> Result<Box<dyn Action>, ()> {
-        self.root.alphabeta(self.depth, f64::NEG_INFINITY, f64::INFINITY, self.allowed_time);
-        
+        self.root.alphabeta(
+            self.depth,
+            f64::NEG_INFINITY,
+            f64::INFINITY,
+            self.allowed_time,
+        );
+
         //convert option to result
         match &self.root.best_move {
             Some(best_move) => Ok(best_move.duplicate()),
@@ -104,7 +113,11 @@ impl TreeRoot {
 
         let mut test_board = self.board.duplicate();
 
-        let potential_moves = if self.board.turn == board::Color::White {&self.board.move_info.white_potential_moves} else {&self.board.move_info.black_potential_moves};
+        let potential_moves = if self.board.turn == board::Color::White {
+            &self.board.move_info.white_potential_moves
+        } else {
+            &self.board.move_info.black_potential_moves
+        };
         let (transmitter, reciever) = mpsc::channel::<ThreadInfo>();
 
         //dispatch all threads
@@ -114,13 +127,23 @@ impl TreeRoot {
                 continue;
             }
 
-
             let mut child_board = self.board.duplicate();
             action.perform_on(&mut child_board);
             let child = SearchNode::new(child_board, self.player);
             let child_transmitter = transmitter.clone();
 
-            thread::spawn(move || Self::child_alphabeta_wrapper(child, child_transmitter, action, depth - 1, alpha, beta, max_time, start));
+            thread::spawn(move || {
+                Self::child_alphabeta_wrapper(
+                    child,
+                    child_transmitter,
+                    action,
+                    depth - 1,
+                    alpha,
+                    beta,
+                    max_time,
+                    start,
+                )
+            });
         }
 
         //if this isn't dropped, the loop never exits
@@ -147,7 +170,16 @@ impl TreeRoot {
     }
 
     //gets child alphabeta value and sends to channel
-    fn child_alphabeta_wrapper(mut child: SearchNode, sender: mpsc::Sender<ThreadInfo>, action: Box<dyn Action>, depth: i32, alpha: f64, beta: f64, max_time: f64, start: Instant) {
+    fn child_alphabeta_wrapper(
+        mut child: SearchNode,
+        sender: mpsc::Sender<ThreadInfo>,
+        action: Box<dyn Action>,
+        depth: i32,
+        alpha: f64,
+        beta: f64,
+        max_time: f64,
+        start: Instant,
+    ) {
         let value = child.alphabeta(depth, 2, alpha, beta, false, max_time, start);
         let info = ThreadInfo {
             node: child,
@@ -185,17 +217,34 @@ impl SearchNode {
         self.value * (self.player.value() as f64)
     }
 
-    fn alphabeta(&mut self, depth: i32, absolute_depth: i32, mut alpha: f64, mut beta: f64, maximizing_player: bool, max_time: f64, start: Instant) -> f64 {
+    fn alphabeta(
+        &mut self,
+        depth: i32,
+        absolute_depth: i32,
+        mut alpha: f64,
+        mut beta: f64,
+        maximizing_player: bool,
+        max_time: f64,
+        start: Instant,
+    ) -> f64 {
         //not the best solution, but it works
         let mut test_board = self.board.duplicate();
 
         //end of game or tree
-        if depth == 0 || self.value == f64::INFINITY || self.value == f64::NEG_INFINITY || start.elapsed().as_micros() / 1000000 >= max_time as u128 {
+        if depth == 0
+            || self.value == f64::INFINITY
+            || self.value == f64::NEG_INFINITY
+            || start.elapsed().as_micros() / 1000000 >= max_time as u128
+        {
             return self.subjective_value();
         }
 
         //get potential moves
-        let potential_moves = if self.board.turn == board::Color::White {&self.board.move_info.white_potential_moves} else {&self.board.move_info.black_potential_moves};
+        let potential_moves = if self.board.turn == board::Color::White {
+            &self.board.move_info.white_potential_moves
+        } else {
+            &self.board.move_info.black_potential_moves
+        };
 
         //stalemate
         if potential_moves.len() == 0 {
@@ -222,11 +271,19 @@ impl SearchNode {
                 let mut child = Self::new(child_board, self.player);
 
                 //recursion
-                let recursion_result = child.alphabeta(depth - 1, absolute_depth + 1, alpha, beta, false, max_time, start);
+                let recursion_result = child.alphabeta(
+                    depth - 1,
+                    absolute_depth + 1,
+                    alpha,
+                    beta,
+                    false,
+                    max_time,
+                    start,
+                );
                 value = max(value, recursion_result);
 
                 //handle best move logic
-                
+
                 //prepopulate if no best params yet
                 if self.best_move.is_none() {
                     self.best_move = Some(action);
@@ -269,7 +326,15 @@ impl SearchNode {
                 let mut child = Self::new(child_board, self.player);
 
                 //recursion
-                let recursion_result = child.alphabeta(depth - 1, absolute_depth + 1, alpha, beta, true, max_time, start);
+                let recursion_result = child.alphabeta(
+                    depth - 1,
+                    absolute_depth + 1,
+                    alpha,
+                    beta,
+                    true,
+                    max_time,
+                    start,
+                );
                 value = min(value, recursion_result);
 
                 //find best child
@@ -308,19 +373,11 @@ impl SearchNode {
 }
 
 fn max(a: f64, b: f64) -> f64 {
-    if a > b {
-        a
-    } else {
-        b
-    }
+    if a > b { a } else { b }
 }
 
 fn min(a: f64, b: f64) -> f64 {
-    if a < b {
-        a
-    } else {
-        b
-    }
+    if a < b { a } else { b }
 }
 
 #[cfg(test)]
@@ -377,6 +434,11 @@ mod tests {
 
 impl fmt::Debug for SearchNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SearchNode with value {}, and position:\n{}", self.value, self.board.draw())
+        write!(
+            f,
+            "SearchNode with value {}, and position:\n{}",
+            self.value,
+            self.board.draw()
+        )
     }
 }

@@ -3,15 +3,15 @@
 //!for structs defined elsewhere.
 //!This file is mostly tests.
 
-pub mod types;
 pub mod board;
 pub mod generation;
+pub mod types;
 
-pub use types::{Action, Move, Castle, MoveInfo, CastleSide};
+pub use types::{Action, Castle, CastleSide, Move, MoveInfo};
 
 #[cfg(test)]
 mod tests {
-    use crate::physical::{board, Board, Coordinate, Piece};
+    use crate::physical::{Board, Coordinate, Piece, board};
 
     #[test]
     fn no_rook_moves() {
@@ -72,7 +72,6 @@ mod tests {
         assert_eq!(white_moves.len(), 20);
         assert_eq!(black_moves.len(), 20);
     }
-
 
     #[test]
     fn eight_knight_moves() {

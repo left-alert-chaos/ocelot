@@ -1,15 +1,15 @@
 //!# tui
 //!A simple implementation of a TUI for Ocelot.
 
-use crate::physical::*;
 use crate::bot::Ocelot;
 use crate::bot::safe_parse_action;
+use crate::physical::*;
 use std::io;
 
 //make board renderable in ascii
 impl Board {
     fn draw_ascii(&self, x: u32, mut y: u32) -> String {
-        let plain  = self.draw();
+        let plain = self.draw();
         let mut output = String::new();
 
         for line in plain.split("\n") {
@@ -40,10 +40,15 @@ impl TUIState {
         println!();
 
         //Logo
-        println!("    \x1b[1;33m\x1b[3mOcelot\x1b[0m\n    Depth: {}", self.engine.depth);
+        println!(
+            "    \x1b[1;33m\x1b[3mOcelot\x1b[0m\n    Depth: {}",
+            self.engine.depth
+        );
 
         //info
-        println!("\nOcelot is a simple(ish) chess engine.\nPlay by typing a long algebraic notation move. Examples:\n\n- e2e4 To move your pawn to e4\n- e1g1 To castle kingside\n- h7h8q to promote a pawn on h7 to queen.\n\nThe pieces are represented by 2-letter strings:\nthe color and the type.\nFor example,\nthe white rook at the bottom-left corner is represented as \"wr\".\n\nTo quit, type \"quit\".\n");
+        println!(
+            "\nOcelot is a simple(ish) chess engine.\nPlay by typing a long algebraic notation move. Examples:\n\n- e2e4 To move your pawn to e4\n- e1g1 To castle kingside\n- h7h8q to promote a pawn on h7 to queen.\n\nThe pieces are represented by 2-letter strings:\nthe color and the type.\nFor example,\nthe white rook at the bottom-left corner is represented as \"wr\".\n\nTo quit, type \"quit\".\n"
+        );
 
         //error
         println!("\x1b[1;31m{}\x1b[0m", self.error);
@@ -54,7 +59,10 @@ impl TUIState {
         };
 
         //draw board and engine move and return cursor to input location
-        println!("{}\x1b[22;70HEngine move: {engine_move}\x1b[3A", self.board.draw_ascii(70, 4));
+        println!(
+            "{}\x1b[22;70HEngine move: {engine_move}\x1b[3A",
+            self.board.draw_ascii(70, 4)
+        );
 
         self.error = String::new();
     }
@@ -73,7 +81,6 @@ pub fn mainloop(depth: i32) {
         engine_last_move: None,
     };
 
-
     //actual main loop
     loop {
         //check if player has moves
@@ -88,7 +95,7 @@ pub fn mainloop(depth: i32) {
 
             state.to_exit = true;
         }
-        
+
         //render
         state.render();
 
@@ -151,4 +158,3 @@ pub fn mainloop(depth: i32) {
     //switch to main buffer before exit
     print!("\x1b[?1049l");
 }
-

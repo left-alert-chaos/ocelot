@@ -15,7 +15,7 @@ impl Board {
         //base heuristic is just white material minus black material
         let mut valuation = self.white_material() as f64;
         valuation -= self.black_material() as f64;
-        
+
         //do various heuristic checks
         valuation += self.pawns_in_center();
         valuation += self.can_castle();
@@ -40,7 +40,7 @@ impl Board {
         }
         value
     }
-    
+
     //check if there are pawns in the center, and give a score for it.
     fn pawns_in_center(&self) -> f64 {
         let mut value = 0.0;

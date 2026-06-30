@@ -1,6 +1,6 @@
-mod physical;
-mod evaluation;
 mod bot;
+mod evaluation;
+mod physical;
 mod tui;
 use bot::Ocelot;
 use physical::*;
@@ -19,7 +19,7 @@ fn main() {
             Ok(num) => {
                 depth = num;
                 break;
-            },
+            }
             Err(_) => continue,
         }
     }
@@ -49,8 +49,10 @@ fn demo(depth: i32) {
     let mut white_engine = Ocelot::new(&b, depth, 4.0);
     let mut black_engine = Ocelot::new(&b, depth, 4.0);
 
-    println!("This demo will play a game between equally-strengthed White and Black players until you kill the program. It gets chaotic and a little illegal!");
-    
+    println!(
+        "This demo will play a game between equally-strengthed White and Black players until you kill the program. It gets chaotic and a little illegal!"
+    );
+
     //play indefinitely
     loop {
         println!("Round {}", white_engine.board.round);
@@ -69,12 +71,14 @@ fn demo(depth: i32) {
 }
 
 fn help() {
-    println!("ocelot-chess is a simple chess engine written from scratch with no dependencies. Flags:
+    println!(
+        "ocelot-chess is a simple chess engine written from scratch with no dependencies. Flags:
     --tui - starts the built-in TUI.
     --demo - runs a chaotic demo of two Ocelots playing against each other.
     --help - prints this message.
 
     If no flags are supplied, the engine starts in UCI mode.
     You can supply a number as an argument and that will be the engine's depth.
-    ");
+    "
+    );
 }

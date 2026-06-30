@@ -5,9 +5,9 @@
 //!is a0.
 
 use crate::physical::movement::MoveInfo;
+use std::collections::HashSet;
 use std::fmt;
 use std::mem::{self, MaybeUninit};
-use std::collections::HashSet;
 
 pub const LETTERS: &str = "abcdefgh";
 
@@ -113,7 +113,7 @@ impl Color {
             Color::Black => -1,
         }
     }
-    
+
     pub fn home_rank(&self) -> usize {
         match self {
             Color::White => 0,
@@ -127,17 +127,15 @@ impl Color {
             Color::Black => Color::White,
         }
     }
-    
+
     pub fn from(repr: String) -> Result<Self, ()> {
         match repr.chars().nth(0).unwrap() {
             'w' => Ok(Self::White),
             'b' => Ok(Self::Black),
-            _ => {
-                Err(())
-            }
+            _ => Err(()),
         }
     }
-    
+
     pub fn pawn_home_rank(&self) -> usize {
         match self {
             Color::White => 1,
@@ -164,7 +162,7 @@ impl Color {
 ///## with_offset(&self, rise: i32, run: i32) -> Coordinate
 ///Creates a new coordinate a certain number of rows and columns away from self.
 ///
-///## from(repr: String) -> Coordinate 
+///## from(repr: String) -> Coordinate
 ///Returns a coordinate from a 2-character string of <col><row>
 ///This is not 0-indexed, so row is decremented by one.
 #[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
@@ -181,7 +179,12 @@ impl fmt::Debug for Coordinate {
 
 impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", LETTERS.chars().nth(self.col).unwrap_or('a'), self.row + 1)
+        write!(
+            f,
+            "{}{}",
+            LETTERS.chars().nth(self.col).unwrap_or('a'),
+            self.row + 1
+        )
     }
 }
 
@@ -236,7 +239,7 @@ impl Coordinate {
     pub fn from(repr: &mut String) -> Self {
         let col = col_num(repr.remove(0));
         let row = repr.remove(0).to_string().parse::<usize>();
-        
+
         Self {
             col,
             row: row.unwrap() - 1,

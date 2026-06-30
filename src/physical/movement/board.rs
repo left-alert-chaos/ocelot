@@ -3,7 +3,7 @@
 //!physical::board::Board.
 
 use crate::physical::board::{self, Board};
-use crate::physical::movement::{MoveInfo, Action};
+use crate::physical::movement::{Action, MoveInfo};
 
 impl Board {
     pub fn is_check(&self, player: board::Color) -> bool {
@@ -39,12 +39,8 @@ impl Board {
         }
 
         match player {
-            board::Color::White => {
-                self.move_info.white_potential_moves.is_empty()
-            }
-            board::Color::Black => {
-                self.move_info.black_potential_moves.is_empty()
-            }
+            board::Color::White => self.move_info.white_potential_moves.is_empty(),
+            board::Color::Black => self.move_info.black_potential_moves.is_empty(),
         }
     }
 

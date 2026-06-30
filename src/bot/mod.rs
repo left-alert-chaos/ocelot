@@ -3,16 +3,14 @@
 //!the UCI implementation.
 
 mod uci;
-pub use uci::*;
-use crate::physical::*;
 use crate::evaluation::SearchTree;
+use crate::physical::*;
 use std::io;
+pub use uci::*;
 
 //TODO: add config options
 #[allow(dead_code)]
-struct EngineOptions {
-
-}
+struct EngineOptions {}
 
 impl EngineOptions {
     fn new() -> Self {
@@ -60,7 +58,7 @@ impl Ocelot {
 
             //interpret command and determine whether to end loop
             if !self.interpret_uci(input) {
-                break
+                break;
             }
         }
     }
@@ -82,9 +80,11 @@ impl Ocelot {
             "uci" => {
                 println!("uciok");
             }
-            "ucinewgame" => {},
-            "isready" => {println!("readyok");} //TODO: wait for background search to finish, if I ever implement
-                               //background search
+            "ucinewgame" => {}
+            "isready" => {
+                println!("readyok");
+            } //TODO: wait for background search to finish, if I ever implement
+            //background search
             "setoption" => {} //TODO: Implement option setting
             "position" => {
                 self.position(command_tail);
@@ -145,7 +145,8 @@ impl Ocelot {
             let move_reprs = halves.nth(1).unwrap().split_whitespace();
 
             for move_repr in move_reprs {
-                let action = uci::parse_action(move_repr.to_string().trim().to_string(), &mut self.board);
+                let action =
+                    uci::parse_action(move_repr.to_string().trim().to_string(), &mut self.board);
                 self.perform_on_self(action);
             }
         }

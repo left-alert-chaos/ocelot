@@ -14,17 +14,26 @@ impl Board {
         let mut new = Board::new();
 
         //closure to automate placement
-        let mut put_piece_on_board = |color: board::Color, ptype: board::PieceType, location: Coordinate| {
-            //kings and rooks haven't moved by default. This is overwritten later when it parses the castling
-            //legality section.
-            let has_moved = match ptype {
-                board::PieceType::Pawn(_) => location.row != color.pawn_home_rank(),
-                board::PieceType::Rook | board::PieceType::King => true,
-                _ => false
-            };
+        let mut put_piece_on_board =
+            |color: board::Color, ptype: board::PieceType, location: Coordinate| {
+                //kings and rooks haven't moved by default. This is overwritten later when it parses the castling
+                //legality section.
+                let has_moved = match ptype {
+                    board::PieceType::Pawn(_) => location.row != color.pawn_home_rank(),
+                    board::PieceType::Rook | board::PieceType::King => true,
+                    _ => false,
+                };
 
-            new.put_piece_on(&location, Piece {color, ptype, location, has_moved});
-        };
+                new.put_piece_on(
+                    &location,
+                    Piece {
+                        color,
+                        ptype,
+                        location,
+                        has_moved,
+                    },
+                );
+            };
 
         //closure to automate has_moved setting to make castling legal
         //takes board as an argument to avoid borrowing issues
@@ -78,7 +87,7 @@ impl Board {
                 'B' => put_piece_on_board(board::Color::White, board::PieceType::Bishop, coord),
                 'Q' => put_piece_on_board(board::Color::White, board::PieceType::Queen, coord),
                 'K' => put_piece_on_board(board::Color::White, board::PieceType::King, coord),
-                
+
                 //flow control
                 '/' => {
                     coord.row -= 1;
@@ -128,10 +137,22 @@ impl Board {
             };
 
             match castle_char {
-                'K' => make_legal(Castle::new(CastleSide::KingSide, board::Color::White), &mut new),
-                'Q' => make_legal(Castle::new(CastleSide::QueenSide, board::Color::White), &mut new),
-                'k' => make_legal(Castle::new(CastleSide::KingSide, board::Color::Black), &mut new),
-                'q' => make_legal(Castle::new(CastleSide::QueenSide, board::Color::Black), &mut new),
+                'K' => make_legal(
+                    Castle::new(CastleSide::KingSide, board::Color::White),
+                    &mut new,
+                ),
+                'Q' => make_legal(
+                    Castle::new(CastleSide::QueenSide, board::Color::White),
+                    &mut new,
+                ),
+                'k' => make_legal(
+                    Castle::new(CastleSide::KingSide, board::Color::Black),
+                    &mut new,
+                ),
+                'q' => make_legal(
+                    Castle::new(CastleSide::QueenSide, board::Color::Black),
+                    &mut new,
+                ),
                 ' ' => break,
                 '-' => {
                     //ensure it ends on a space
@@ -217,8 +238,14 @@ mod tests {
     #[test]
     fn parse_default_pos_fen() {
         let expected: Board = Default::default();
-        let generated = Board::parse(String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).unwrap();
-        println!("drawing generated board (should be default position):\n{}", generated.draw());
+        let generated = Board::parse(String::from(
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        ))
+        .unwrap();
+        println!(
+            "drawing generated board (should be default position):\n{}",
+            generated.draw()
+        );
         diff(generated.squares, expected.squares);
         assert_eq!(generated, expected);
     }
@@ -233,9 +260,11 @@ mod tests {
         expected.move_from(&pawn_start, &pawn_end);
         expected.turn = board::Color::Black;
 
-        
         //generate board
-        let generated = Board::parse(String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
+        let generated = Board::parse(String::from(
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        ))
+        .unwrap();
         assert_eq!(generated, expected);
     }
 }

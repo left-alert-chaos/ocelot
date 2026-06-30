@@ -12,4 +12,4 @@ pub use board::{Board, Coordinate, Piece};
 #[cfg(test)]
 pub use board::Square;
 
-pub use movement::{Action, Castle, Move, CastleSide};
+pub use movement::{Action, Castle, CastleSide, Move};

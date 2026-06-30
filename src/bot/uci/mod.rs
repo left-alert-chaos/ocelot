@@ -43,20 +43,29 @@ impl FromUCI for Move {
 
         //If this breaks, look at the if en_passant block in new()
         //assume en passant and if it isn't legal catch it in constructor
-        Ok(Box::new(Self::new(from, to, current_board, promotion, true)))
+        Ok(Box::new(Self::new(
+            from,
+            to,
+            current_board,
+            promotion,
+            true,
+        )))
     }
 }
 
 #[allow(refining_impl_trait)]
 impl FromUCI for Castle {
     fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
-        if representation.chars().nth(0).unwrap() != 'e' || representation.len() != 4 || representation.contains(" ") {
+        if representation.chars().nth(0).unwrap() != 'e'
+            || representation.len() != 4
+            || representation.contains(" ")
+        {
             return Err(());
         }
 
         let king_loc = Coordinate::from(&mut representation);
         let king_target = Coordinate::from(&mut representation);
-        
+
         let player = match king_loc.row {
             0 => board::Color::White,
             7 => board::Color::Black,
@@ -68,14 +77,12 @@ impl FromUCI for Castle {
         let side = match king_target.col {
             2 => CastleSide::QueenSide,
             6 => CastleSide::KingSide,
-            _ => {
-                return Err(())
-            }
+            _ => return Err(()),
         };
 
         let mut castle = Self::new(side, player);
         if castle.is_illegal(current_board) {
-            return Err(())
+            return Err(());
         }
 
         Ok(Box::new(castle))
@@ -86,7 +93,10 @@ impl ToUCI for Castle {
     fn generate(&self) -> String {
         let row = self.player.home_rank() + 1;
         //get target column by converting column index to column letter
-        let target = board::LETTERS.chars().nth(self.side.king_end_col()).unwrap();
+        let target = board::LETTERS
+            .chars()
+            .nth(self.side.king_end_col())
+            .unwrap();
 
         format!("e{row}{target}{row}")
     }
@@ -100,13 +110,16 @@ pub fn parse_action(representation: String, current_board: &mut Board) -> Box<dy
     }
 
     //otherwise, create a move
-    
+
     let m = Move::parse(representation, current_board).unwrap();
     m
 }
 
 ///Like parse_action, but doesn't call unwrap()
-pub fn safe_parse_action(representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
+pub fn safe_parse_action(
+    representation: String,
+    current_board: &mut Board,
+) -> Result<Box<dyn Action>, ()> {
     if let Ok(c) = Castle::parse(representation.clone(), current_board) {
         return Ok(c);
     }
@@ -114,7 +127,7 @@ pub fn safe_parse_action(representation: String, current_board: &mut Board) -> R
     if let Ok(m) = Move::parse(representation, current_board) {
         return Ok(m);
     }
-    
+
     Err(())
 }
 
@@ -127,7 +140,13 @@ mod tests {
     fn generate_move() {
         let b: Board = Default::default();
         let expected = String::from("e2e4q");
-        let m = Move::new(Coordinate::new(4, 1), Coordinate::new(4, 3), &b, Some(board::PieceType::Queen), false);
+        let m = Move::new(
+            Coordinate::new(4, 1),
+            Coordinate::new(4, 3),
+            &b,
+            Some(board::PieceType::Queen),
+            false,
+        );
         let generated = m.generate();
         assert_eq!(expected, generated);
     }
