@@ -44,7 +44,7 @@ Ocelot doesn't use any 3rd-party libraries. Its only dependency is the Rust stan
 
 When you start the engine with no arguments, it starts in UCI mode. UCI (Universal Chess Interface) is a protocol defining how chess engines and user interfaces communicate. It defines how moves should be represented (like `e2e4`) and how positions should be represented.
 
-After the UI tells Ocelot to find the best move in a position, it scans the board for pieces of its side's color. Instead of inefficiently checking all 64 squares on the board, it keeps a `vector` (list) of the coordinates of squares with pieces. Next, after it has found all of its pieces, it iterates through all of them and finds their potential moves. *Potential* moves are distinct from *legal* moves in that they haven't been checked for legality. They are simply moves that don't collide with the end of the board and don't illegally capture a piece. This distinction is important because you can only filter for legality after you have all potential moves. The reason is simple: in chess, any move is legal as long as it doesn't put you in check, and you can't know if your king is threatened until you know where your opponent's pieces can go.
+After the UI tells Ocelot to find the best move in a position, it scans the board for pieces of its side's color. Instead of inefficiently checking all 64 squares on the board, it keeps a `HashSet` (unordered set with no duplicates) of the coordinates of squares with pieces. Next, after it has found all of its pieces, it iterates through all of them and finds their potential moves. *Potential* moves are distinct from *legal* moves in that they haven't been checked for legality. They are simply moves that don't collide with the end of the board and don't illegally capture a piece. This distinction is important because you can only filter for legality after you have all potential moves. The reason is simple: in chess, any move is legal as long as it doesn't put you in check, and you can't know if your king is threatened until you know where your opponent's pieces can go.
 
 After all these potential moves have been found, Ocelot starts its search algorithm. This is the recursive logic that looks at all possible boards resulting from all possible moves, and chooses the move that leads to the greatest outcome.
 
@@ -60,4 +60,4 @@ As I mentioned above, Ocelot doesn't have any dependencies. However, that doesn'
 - Rust's documentation is super helpful, and some of my variable names are stolen from it.
 
 # AI
-No AI was used for programming this project. All code is my own. I used the Google AI Overview for researching on occaision.
+No AI was used for programming this project. All code is my own. I used the Google AI Overview for researching on occasion.
