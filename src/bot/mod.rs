@@ -26,6 +26,7 @@ pub struct Ocelot {
     pub(crate) depth: i32,
     ponder: Option<Box<dyn Action>>,
     allowed_time: f64,
+    evaluation: f64,
 }
 
 impl Ocelot {
@@ -35,6 +36,7 @@ impl Ocelot {
             depth,
             ponder: None,
             allowed_time,
+            evaluation: 0.0,
         }
     }
 
@@ -102,6 +104,9 @@ impl Ocelot {
             "d" => {
                 println!("{}", self.board.draw());
             }
+            "eval" => {
+                println!("{}", self.evaluation);
+            }
             _ => {
                 eprintln!("Ocelot::interpret_uci(): Command {command} isn't implemented.");
             }
@@ -115,6 +120,11 @@ impl Ocelot {
         let mut tree = SearchTree::new(&self.board, self.depth, self.allowed_time);
         let mut best_move = tree.safe_best_move();
         let maybe_best_position = tree.root.best_child;
+        
+        //set evaluation
+        if let Some(value) = tree.root.best_value {
+            self.evaluation = value;
+        }
 
         //get pondered move
         let ponder = if let Some(best_pos) = *maybe_best_position {

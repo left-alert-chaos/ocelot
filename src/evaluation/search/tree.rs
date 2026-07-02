@@ -15,7 +15,7 @@ pub struct SearchTree {
 }
 
 impl SearchTree {
-    pub fn new(game: &Board, depth: i32, mut time: f64) -> Self {
+    pub fn new(game: &Board, depth: i32, time: f64) -> Self {
         let game = game.duplicate();
         let turn = game.turn;
 
@@ -96,6 +96,7 @@ pub struct TreeRoot {
     pub(crate) best_move: Option<Box<dyn Action>>,
     pub(crate) best_child: Box<Option<SearchNode>>,
     player: board::Color,
+    pub(crate) best_value: Option<f64>,
 }
 
 impl TreeRoot {
@@ -105,6 +106,7 @@ impl TreeRoot {
             best_move: None,
             best_child: Box::new(None),
             player: turn,
+            best_value: None,
         }
     }
 
@@ -150,19 +152,18 @@ impl TreeRoot {
         drop(transmitter);
 
         //read results
-        let mut best_value: Option<f64> = None;
         for info in reciever {
             //if no results yet, prepopulate
             if self.best_move.is_none() {
                 self.best_move = Some(info.action);
                 *self.best_child = Some(info.node);
-                best_value = Some(info.value);
+                self.best_value = Some(info.value);
                 continue;
             }
 
             //otherwise, check if best
-            if info.value >= best_value.unwrap() {
-                best_value = Some(info.value);
+            if info.value >= self.best_value.unwrap() {
+                self.best_value = Some(info.value);
                 self.best_move = Some(info.action);
                 *self.best_child = Some(info.node);
             }
