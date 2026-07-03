@@ -16,6 +16,17 @@ pub trait Action: fmt::Debug + fmt::Display + ToUCI + Send {
     fn is_illegal(&mut self, game: &mut Board) -> bool;
     fn duplicate(&self) -> Box<dyn Action>;
     fn evaluate(&self) -> f64;
+    fn action_type(&self) -> ActionType;
+    fn is_equal_to(&self, other: &Box<dyn Action>) -> bool {
+        other.evaluate() == self.evaluate() && other.to_coordinate() == self.to_coordinate() && self.action_type() == other.action_type()
+    }
+}
+
+///Probably what I should have done in the first place.
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum ActionType {
+    Move,
+    Castle,
 }
 
 ///# Move
@@ -201,6 +212,10 @@ impl Action for Move {
 
     fn evaluate(&self) -> f64 {
         self.value as f64
+    }
+
+    fn action_type(&self) -> ActionType {
+        ActionType::Move
     }
 }
 
@@ -479,6 +494,10 @@ impl Action for Castle {
 
     fn evaluate(&self) -> f64 {
         2.0
+    }
+
+    fn action_type(&self) -> ActionType {
+        ActionType::Castle
     }
 }
 

@@ -66,6 +66,16 @@ impl TUIState {
 
         self.error = String::new();
     }
+
+    fn white_potential_moves_contains(&self, action: &Box<dyn Action>) -> bool {
+        for potential in &self.board.move_info.white_potential_moves {
+            if action.is_equal_to(&potential) {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 pub fn mainloop(depth: i32) {
@@ -120,7 +130,7 @@ pub fn mainloop(depth: i32) {
 
         //perform move, get engine response
         if let Ok(mut user_action) = safe_parse_action(input, &mut state.board) {
-            if user_action.is_illegal(&mut state.board) {
+            if user_action.is_illegal(&mut state.board) || !state.white_potential_moves_contains(&user_action) {
                 state.error = String::from("That's an illegal move!");
                 continue;
             }
@@ -158,3 +168,4 @@ pub fn mainloop(depth: i32) {
     //switch to main buffer before exit
     print!("\x1b[?1049l");
 }
+

@@ -2,6 +2,8 @@
 //!This module holds code to generate UCI from engine objects and generate engine objects from UCI.
 
 mod fen;
+#[allow(dead_code)]
+mod go;
 use crate::physical::*;
 
 pub trait ToUCI {
@@ -32,8 +34,14 @@ impl FromUCI for Move {
         }
 
         let from = Coordinate::from(&mut representation);
+        if !from.is_valid() {
+            return Err(())
+        }
 
         let to = Coordinate::from(&mut representation);
+        if !to.is_valid() {
+            return Err(())
+        }
 
         let promotion = if !representation.is_empty() {
             board::PieceType::from(representation.remove(0)).ok()
@@ -64,7 +72,13 @@ impl FromUCI for Castle {
         }
 
         let king_loc = Coordinate::from(&mut representation);
+        if !king_loc.is_valid() {
+            return Err(())
+        }
         let king_target = Coordinate::from(&mut representation);
+        if !king_target.is_valid() {
+            return Err(())
+        }
 
         let player = match king_loc.row {
             0 => board::Color::White,
