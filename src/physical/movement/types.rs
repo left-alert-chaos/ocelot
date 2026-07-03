@@ -13,12 +13,13 @@ pub trait Action: fmt::Debug + fmt::Display + ToUCI + Send {
     //information to restore in undo()
     fn undo_on(&self, game: &mut Board);
     fn to_coordinate(&self) -> Option<Coordinate>;
+    fn coordinate_from(&self) -> Option<Coordinate>;
     fn is_illegal(&mut self, game: &mut Board) -> bool;
     fn duplicate(&self) -> Box<dyn Action>;
     fn evaluate(&self) -> f64;
     fn action_type(&self) -> ActionType;
     fn is_equal_to(&self, other: &Box<dyn Action>) -> bool {
-        other.evaluate() == self.evaluate() && other.to_coordinate() == self.to_coordinate() && self.action_type() == other.action_type()
+        other.evaluate() == self.evaluate() && other.to_coordinate() == self.to_coordinate() && self.coordinate_from() == other.coordinate_from() && self.action_type() == other.action_type()
     }
 }
 
@@ -66,6 +67,10 @@ impl fmt::Debug for Move {
 impl Action for Move {
     fn to_coordinate(&self) -> Option<Coordinate> {
         Some(self.to)
+    }
+
+    fn coordinate_from(&self) -> Option<Coordinate> {
+        Some(self.from)
     }
 
     fn is_illegal(&mut self, game: &mut Board) -> bool {
@@ -382,6 +387,10 @@ impl Action for Castle {
         None
     }
 
+    fn coordinate_from(&self) -> Option<Coordinate> {
+        None
+    }
+
     fn perform_on(&mut self, game: &mut Board) {
         let row = self.row();
 
@@ -410,18 +419,19 @@ impl Action for Castle {
         let rook_pos = Coordinate::new(self.side.rook_end_col(), row);
         let rook_target = Coordinate::new(self.side.rook_start_col(), row);
 
-        game.move_from(&king_pos, &king_target);
-        game.move_from(&rook_pos, &rook_target);
-
         //de-increment round
         game.turn = game.turn.opposite();
         if game.turn == board::Color::Black {
             game.round -= 1;
         }
 
-        //reset has_moved
-        game.mut_square(&king_target).piece.unwrap().has_moved = false;
-        game.mut_square(&rook_target).piece.unwrap().has_moved = false;
+        //move pieces
+        let mut king = game.square(&king_pos).piece.unwrap();
+        king.has_moved = false;
+        game.put_piece_on(&king_target, king);
+        let mut rook = game.square(&rook_pos).piece.unwrap();
+        rook.has_moved = false;
+        game.put_piece_on(&rook_target, rook);
         game.update();
     }
 
@@ -445,7 +455,7 @@ impl Action for Castle {
             return true;
         }
 
-        if game.is_check(king.color) {
+        if game.is_check(self.player) {
             return true;
         }
 
@@ -466,15 +476,14 @@ impl Action for Castle {
             return true;
         }
 
+        let opponent_threats = match self.player {
+            board::Color::White => &game.move_info.black_threatened_squares,
+            board::Color::Black => &game.move_info.white_threatened_squares,
+        };
+
         //check for empty and unattacked squares
         for col in self.side.squares_that_must_be_empty() {
             let coord = Coordinate::new(col, row);
-
-            let opponent_threats = match self.player {
-                board::Color::White => &game.move_info.black_threatened_squares,
-                board::Color::Black => &game.move_info.white_threatened_squares,
-            };
-
             if opponent_threats.contains(&coord) {
                 return true;
             }

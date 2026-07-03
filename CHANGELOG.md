@@ -1,6 +1,13 @@
 # Changelog
 This file will be used to track changes from Ocelot version `0.1.1` onward.
 
+## 0.1.4
+This is a patch finishing the fixes introduced in `0.1.3`.
+
+### Changes
+- Fix castling changing piece colors
+- Prevent player from taking their own pieces
+
 ## 0.1.3
 This is a patch bringing plenty of fixes, and overall release number 4.
 

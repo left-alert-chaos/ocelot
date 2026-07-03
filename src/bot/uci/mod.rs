@@ -11,7 +11,7 @@ pub trait ToUCI {
 }
 
 pub trait FromUCI {
-    fn parse(representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()>;
+    fn parse(representation: String, current_board: &Board) -> Result<Box<dyn Action>, ()>;
 }
 
 impl ToUCI for Move {
@@ -28,7 +28,9 @@ impl ToUCI for Move {
 
 #[allow(refining_impl_trait)]
 impl FromUCI for Move {
-    fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
+    fn parse(mut representation: String, current_board: &Board) -> Result<Box<dyn Action>, ()> {
+        let backup_repr = representation.clone();
+        let current_board = current_board.duplicate();
         if representation.len() > 5 || representation.len() < 4 || representation.contains(" ") {
             return Err(());
         }
@@ -43,6 +45,17 @@ impl FromUCI for Move {
             return Err(())
         }
 
+        //weirdly enough, this prevents illegal castling having side effects
+        if let Some(captured_piece) = current_board.square(&to).piece {
+            if let Some(moving_piece) = current_board.square(&from).piece {
+                if captured_piece.color == moving_piece.color {
+                    return Err(())
+                }
+            } else {
+                eprintln!("Generating a move from UCI {backup_repr}, but there isn't a piece where the move is from.");
+            }
+        }
+
         let promotion = if !representation.is_empty() {
             board::PieceType::from(representation.remove(0)).ok()
         } else {
@@ -54,7 +67,7 @@ impl FromUCI for Move {
         Ok(Box::new(Self::new(
             from,
             to,
-            current_board,
+            &current_board,
             promotion,
             true,
         )))
@@ -63,7 +76,8 @@ impl FromUCI for Move {
 
 #[allow(refining_impl_trait)]
 impl FromUCI for Castle {
-    fn parse(mut representation: String, current_board: &mut Board) -> Result<Box<dyn Action>, ()> {
+    fn parse(mut representation: String, current_board: &Board) -> Result<Box<dyn Action>, ()> {
+        let mut current_board = current_board.duplicate();
         if representation.chars().nth(0).unwrap() != 'e'
             || representation.len() != 4
             || representation.contains(" ")
@@ -95,7 +109,7 @@ impl FromUCI for Castle {
         };
 
         let mut castle = Self::new(side, player);
-        if castle.is_illegal(current_board) {
+        if castle.is_illegal(&mut current_board) {
             return Err(());
         }
 

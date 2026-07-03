@@ -42,7 +42,7 @@ impl TUIState {
         //Logo
         println!(
             "    \x1b[1;33m\x1b[3mOcelot\x1b[0m\n    Depth: {}",
-            self.engine.depth
+            self.engine.depth,
         );
 
         //info
@@ -67,7 +67,7 @@ impl TUIState {
         self.error = String::new();
     }
 
-    fn white_potential_moves_contains(&self, action: &Box<dyn Action>) -> bool {
+    fn white_potential_moves_contains(&mut self, action: &Box<dyn Action>) -> bool {
         for potential in &self.board.move_info.white_potential_moves {
             if action.is_equal_to(&potential) {
                 return true;
