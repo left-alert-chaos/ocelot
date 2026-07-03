@@ -236,14 +236,17 @@ impl Coordinate {
         Coordinate { row, col }
     }
 
-    pub fn from(repr: &mut String) -> Self {
+    pub fn from(repr: &mut String) -> Result<Self, ()> {
         let col = col_num(repr.remove(0));
-        let row = repr.remove(0).to_string().parse::<usize>();
+        let row = match repr.remove(0).to_string().parse::<usize>(){
+            Ok(row) => row,
+            Err(_) => return Err(()),
+        };
 
-        Self {
-            col,
-            row: row.unwrap() - 1,
-        }
+        Ok(Self {
+            col: col?,
+            row: row - 1,
+        })
     }
 }
 
@@ -594,7 +597,7 @@ impl Board {
 
                 //get square, draw, convert to str
                 output.push_str(
-                    self.square(&Coordinate::new(col_num(col), row as usize))
+                    self.square(&Coordinate::new(col_num(col).unwrap(), row as usize))
                         .draw()
                         .as_str(),
                 );
@@ -630,12 +633,12 @@ impl Board {
     }
 }
 
-pub fn col_num(name: char) -> usize {
+pub fn col_num(name: char) -> Result<usize, ()> {
     let res = LETTERS.find(name);
     if let Some(num) = res {
-        num
+        Ok(num)
     } else {
-        panic!("Column {name} doesn't exist!");
+        Err(())
     }
 }
 
@@ -675,6 +678,6 @@ mod tests {
     fn coordinate_from() {
         let expected = Coordinate::new(0, 0);
         let generated = Coordinate::from(&mut String::from("a1"));
-        assert_eq!(generated, expected);
+        assert_eq!(generated.unwrap(), expected);
     }
 }

@@ -33,12 +33,12 @@ impl FromUCI for Move {
             return Err(());
         }
 
-        let from = Coordinate::from(&mut representation);
+        let from = Coordinate::from(&mut representation)?;
         if !from.is_valid() {
             return Err(())
         }
 
-        let to = Coordinate::from(&mut representation);
+        let to = Coordinate::from(&mut representation)?;
         if !to.is_valid() {
             return Err(())
         }
@@ -71,11 +71,11 @@ impl FromUCI for Castle {
             return Err(());
         }
 
-        let king_loc = Coordinate::from(&mut representation);
+        let king_loc = Coordinate::from(&mut representation)?;
         if !king_loc.is_valid() {
             return Err(())
         }
-        let king_target = Coordinate::from(&mut representation);
+        let king_target = Coordinate::from(&mut representation)?;
         if !king_target.is_valid() {
             return Err(())
         }

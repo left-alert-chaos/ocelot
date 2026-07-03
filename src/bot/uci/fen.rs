@@ -181,7 +181,7 @@ impl Board {
 
         if !en_passant_string.contains('-') && en_passant_string.len() == 2 {
             //Find pawn
-            let en_passant_location = Coordinate::from(&mut en_passant_string);
+            let en_passant_location = Coordinate::from(&mut en_passant_string)?;
             let pawn_row = match en_passant_location.row {
                 2 => 3,
                 5 => 4,

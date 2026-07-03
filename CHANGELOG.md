@@ -1,6 +1,20 @@
 # Changelog
 This file will be used to track changes from Ocelot version `0.1.1` onward.
 
+## 0.1.3
+This is a patch bringing plenty of fixes, and overall release number 4.
+
+### Changes
+- Add proper stalemate evaluation
+- Add `eval` UCI command
+- Fix inaccuracies in README
+- Format entire codebase
+- Add time cutoff for search, so if allotted time is surpassed search ends early
+- Fix `position` command parsing to accept FEN strings
+- Add check for illegal moves when parsing user move in TUI
+- Start work on proper `go` command parsing. This exists as dead code for now, but it will be fully implemented next release.
+- Make coordinate generation safer to reduce crashes
+
 ## 0.1.2
 This patch is one of version `0.1`, and overall release number 3.
 
