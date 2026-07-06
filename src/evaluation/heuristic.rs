@@ -94,7 +94,7 @@ impl Board {
         let white_moves = self.move_info.white_potential_moves.len();
         let black_moves = self.move_info.black_potential_moves.len();
 
-        let diff = (white_moves - black_moves) as f64 * 0.1;
+        let diff = (white_moves as f64 - black_moves as f64) * 0.1;
 
         //keep it reasonable
         if diff > 4.0 {
