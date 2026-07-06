@@ -31,7 +31,7 @@ Then, just run the following command:
 cargo install ocelot-chess
 ```
 
-You should then be able to run it with the `ocelot-chess` command. If that didn't work, it's probably because Cargo's `bin` directory isn't in your PATH. To fix this on Linux or MacOS, run this command:
+You should then be able to run it with the `ocelot-chess` command. If that didn't work, it's probably because Cargo's `bin` directory isn't in your `PATH`. To fix this on Linux or MacOS, run this command:
 
 ```Shell
 export PATH="$PATH:$HOME/.cargo/bin/"
