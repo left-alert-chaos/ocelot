@@ -385,6 +385,8 @@ pub struct Board {
     pub(crate) turn: Color,
     pub(crate) round: i32, //the number of the set of 2 moves
     pub(crate) move_info: MoveInfo,
+    pub(crate) white_castled: bool,
+    pub(crate) black_castled: bool,
 }
 
 impl fmt::Display for Board {
@@ -459,6 +461,8 @@ impl Board {
             turn: Color::White,
             round: 1, //not 0-indexed; 0 is used to signal "never" or a turn that is impossible
             move_info: MoveInfo::new(),
+            white_castled: false,
+            black_castled: false,
         }
     }
 

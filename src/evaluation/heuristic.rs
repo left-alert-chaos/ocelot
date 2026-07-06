@@ -20,6 +20,7 @@ impl Board {
         valuation += self.pawns_in_center();
         valuation += self.can_castle();
         valuation += self.freedom();
+        valuation += self.has_castled();
 
         valuation
     }
@@ -75,22 +76,33 @@ impl Board {
         let mut black_kingside = Castle::new(CastleSide::KingSide, board::Color::Black);
 
         if !white_queenside.is_illegal(self) {
-            value += 1.0;
+            value += 0.8;
         }
         if !black_queenside.is_illegal(self) {
-            value -= 1.0;
+            value -= 0.8;
         }
         if !white_kingside.is_illegal(self) {
-            value += 1.0;
+            value += 0.8;
         }
         if !black_kingside.is_illegal(self) {
-            value -= 1.0;
+            value -= 0.8;
         }
 
         value
     }
 
-    fn freedom(&mut self) -> f64 {
+    fn has_castled(&self) -> f64 {
+        let mut value = 0.0;
+        if self.white_castled {
+            value += 1.0;
+        }
+        if self.black_castled {
+            value -= 1.0;
+        }
+        value
+    }
+
+    fn freedom(&self) -> f64 {
         let white_moves = self.move_info.white_potential_moves.len();
         let black_moves = self.move_info.black_potential_moves.len();
 

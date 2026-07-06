@@ -407,6 +407,13 @@ impl Action for Castle {
         if game.turn == board::Color::White {
             game.round += 1;
         }
+
+        //set whether player has castled
+        match self.player {
+            board::Color::White => game.white_castled = true,
+            board::Color::Black => game.black_castled = true,
+        }
+
         game.update();
     }
 
@@ -432,6 +439,14 @@ impl Action for Castle {
         let mut rook = game.square(&rook_pos).piece.unwrap();
         rook.has_moved = false;
         game.put_piece_on(&rook_target, rook);
+
+
+        //set whether player has castled
+        match self.player {
+            board::Color::White => game.white_castled = false,
+            board::Color::Black => game.black_castled = false,
+        }
+
         game.update();
     }
 
