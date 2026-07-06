@@ -19,6 +19,7 @@ impl Board {
         //do various heuristic checks
         valuation += self.pawns_in_center();
         valuation += self.can_castle();
+        valuation += self.freedom();
 
         valuation
     }
@@ -87,5 +88,19 @@ impl Board {
         }
 
         value
+    }
+
+    fn freedom(&mut self) -> f64 {
+        let white_moves = self.move_info.white_potential_moves.len();
+        let black_moves = self.move_info.black_potential_moves.len();
+
+        let diff = (white_moves - black_moves) as f64 * 0.1;
+
+        //keep it reasonable
+        if diff > 4.0 {
+            return 0.0;
+        }
+
+        diff
     }
 }
