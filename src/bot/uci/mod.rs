@@ -37,22 +37,24 @@ impl FromUCI for Move {
 
         let from = Coordinate::from(&mut representation)?;
         if !from.is_valid() {
-            return Err(())
+            return Err(());
         }
 
         let to = Coordinate::from(&mut representation)?;
         if !to.is_valid() {
-            return Err(())
+            return Err(());
         }
 
         //weirdly enough, this prevents illegal castling having side effects
         if let Some(captured_piece) = current_board.square(&to).piece {
             if let Some(moving_piece) = current_board.square(&from).piece {
                 if captured_piece.color == moving_piece.color {
-                    return Err(())
+                    return Err(());
                 }
             } else {
-                eprintln!("Generating a move from UCI {backup_repr}, but there isn't a piece where the move is from.");
+                eprintln!(
+                    "Generating a move from UCI {backup_repr}, but there isn't a piece where the move is from."
+                );
             }
         }
 
@@ -87,11 +89,11 @@ impl FromUCI for Castle {
 
         let king_loc = Coordinate::from(&mut representation)?;
         if !king_loc.is_valid() {
-            return Err(())
+            return Err(());
         }
         let king_target = Coordinate::from(&mut representation)?;
         if !king_target.is_valid() {
-            return Err(())
+            return Err(());
         }
 
         let player = match king_loc.row {

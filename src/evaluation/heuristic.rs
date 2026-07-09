@@ -123,14 +123,20 @@ impl Board {
         let black_queen_square = self.square(&Coordinate::new(3, 7));
         let white_queen_square = self.square(&Coordinate::new(3, 0));
 
-        if let Some(piece) = black_queen_square.piece && piece.color == board::Color::Black && piece.ptype == board::PieceType::Queen {
+        if let Some(piece) = black_queen_square.piece
+            && piece.color == board::Color::Black
+            && piece.ptype == board::PieceType::Queen
+        {
             value -= 0.5;
         }
 
-        if let Some(piece) = white_queen_square.piece && piece.color == board::Color::White && piece.ptype == board::PieceType::Queen {
+        if let Some(piece) = white_queen_square.piece
+            && piece.color == board::Color::White
+            && piece.ptype == board::PieceType::Queen
+        {
             value += 0.5;
         }
-        
+
         value
     }
 }

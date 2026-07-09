@@ -120,7 +120,7 @@ impl Ocelot {
         let mut tree = SearchTree::new(&self.board, self.depth, self.allowed_time);
         let mut best_move = tree.safe_best_move();
         let maybe_best_position = tree.root.best_child;
-        
+
         //set evaluation
         if let Some(value) = tree.root.best_value {
             self.evaluation = value;

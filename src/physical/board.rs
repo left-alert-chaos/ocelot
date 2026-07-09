@@ -238,7 +238,7 @@ impl Coordinate {
 
     pub fn from(repr: &mut String) -> Result<Self, ()> {
         let col = col_num(repr.remove(0));
-        let row = match repr.remove(0).to_string().parse::<usize>(){
+        let row = match repr.remove(0).to_string().parse::<usize>() {
             Ok(row) => row,
             Err(_) => return Err(()),
         };

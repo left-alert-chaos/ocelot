@@ -19,7 +19,10 @@ pub trait Action: fmt::Debug + fmt::Display + ToUCI + Send {
     fn evaluate(&self) -> f64;
     fn action_type(&self) -> ActionType;
     fn is_equal_to(&self, other: &Box<dyn Action>) -> bool {
-        other.evaluate() == self.evaluate() && other.to_coordinate() == self.to_coordinate() && self.coordinate_from() == other.coordinate_from() && self.action_type() == other.action_type()
+        other.evaluate() == self.evaluate()
+            && other.to_coordinate() == self.to_coordinate()
+            && self.coordinate_from() == other.coordinate_from()
+            && self.action_type() == other.action_type()
     }
 }
 
@@ -439,7 +442,6 @@ impl Action for Castle {
         let mut rook = game.square(&rook_pos).piece.unwrap();
         rook.has_moved = false;
         game.put_piece_on(&rook_target, rook);
-
 
         //set whether player has castled
         match self.player {

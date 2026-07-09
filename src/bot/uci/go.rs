@@ -1,8 +1,8 @@
 //!# go
 //!This module holds code to parse a `go` UCI command.
 
-use crate::physical::*;
 use crate::bot::uci::safe_parse_action;
+use crate::physical::*;
 
 pub struct Go {
     cutoff: SearchCutoff,
@@ -17,7 +17,7 @@ pub struct Go {
 impl Go {
     pub fn parse(command: String, board: &mut Board) -> Result<Self, ()> {
         let mut words = command.split_whitespace();
-        
+
         //find cutoff
         let mut cutoff = SearchCutoff::Infinite;
         let mut unit: &str = "";
@@ -38,7 +38,7 @@ impl Go {
 
                         break;
                     }
-                },
+                }
             }
         }
 
@@ -60,7 +60,7 @@ impl Go {
                 winc: None,
                 binc: None,
                 movestogo: None,
-            })
+            });
         }
 
         Err(())
@@ -74,4 +74,3 @@ pub enum SearchCutoff {
     Nodes(i32),
     Depth(i32),
 }
-
