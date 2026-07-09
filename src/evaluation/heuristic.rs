@@ -21,6 +21,7 @@ impl Board {
         valuation += self.can_castle();
         valuation += self.freedom();
         valuation += self.has_castled();
+        valuation += self.queen_movement();
 
         valuation
     }
@@ -114,5 +115,22 @@ impl Board {
         }
 
         diff
+    }
+
+    //reward queen staying on home square
+    fn queen_movement(&self) -> f64 {
+        let mut value = 0.0;
+        let black_queen_square = self.square(&Coordinate::new(3, 7));
+        let white_queen_square = self.square(&Coordinate::new(3, 0));
+
+        if let Some(piece) = black_queen_square.piece && piece.color == board::Color::Black && piece.ptype == board::PieceType::Queen {
+            value -= 0.5;
+        }
+
+        if let Some(piece) = white_queen_square.piece && piece.color == board::Color::White && piece.ptype == board::PieceType::Queen {
+            value += 0.5;
+        }
+        
+        value
     }
 }

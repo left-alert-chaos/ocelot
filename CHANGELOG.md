@@ -1,6 +1,15 @@
 # Changelog
 This file will be used to track changes from Ocelot version `0.1.1` onward.
 
+## Currently unreleased
+These are changes that are in the GitHub repo but haven't been released on crates.io yet.
+
+### Changes
+- Add castling heuristic for evaluation
+- Add freedom heuristic for evaluation
+- Add queen movement heuristic to discourage premature queen development
+- Fix move generation when the player enters an illegal move in TUI
+
 ## 0.1.4
 This is a patch finishing the fixes introduced in `0.1.3`.
 
