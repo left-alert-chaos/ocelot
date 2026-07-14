@@ -15,6 +15,7 @@ exclude = [
 	".github",
 	"target",
 	"install.sh",
+	"AGENTS.md",
 ]
 
 [dependencies]
