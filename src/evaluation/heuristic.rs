@@ -19,7 +19,6 @@ impl Board {
         //do various heuristic checks
         valuation += self.pawns_in_center();
         valuation += self.can_castle();
-        valuation += self.freedom();
         valuation += self.has_castled();
         valuation += self.queen_movement();
 
@@ -101,20 +100,6 @@ impl Board {
             value -= 1.0;
         }
         value
-    }
-
-    fn freedom(&self) -> f64 {
-        let white_moves = self.move_info.white_potential_moves.len();
-        let black_moves = self.move_info.black_potential_moves.len();
-
-        let diff = (white_moves as f64 - black_moves as f64) * 0.1;
-
-        //keep it reasonable
-        if diff > 4.0 {
-            return 0.0;
-        }
-
-        diff
     }
 
     //reward queen staying on home square
