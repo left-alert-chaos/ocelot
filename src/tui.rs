@@ -60,8 +60,9 @@ impl TUIState {
 
         //draw board and engine move and return cursor to input location
         println!(
-            "{}\x1b[22;70HEngine move: {engine_move}\x1b[3A",
-            self.board.draw_ascii(70, 4)
+            "{}\x1b[22;70HEngine move: {engine_move}\n\x1b[23;70HEvaluation: {}\x1b[4A",
+            self.board.draw_ascii(70, 4),
+            self.board.evaluation(),
         );
 
         self.error = String::new();
@@ -154,7 +155,7 @@ pub fn mainloop(depth: i32) {
                 continue;
             }
 
-            state.error = String::from("Engine is thinking...");
+            state.error = String::from("Ocelot is thinking...");
             state.render();
 
             let mut engine_move = state.engine.safe_best_move();
