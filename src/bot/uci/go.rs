@@ -6,14 +6,14 @@ use crate::physical::*;
 
 #[derive(Default, Debug)]
 pub struct Go {
-    cutoff: SearchCutoff,
-    searchmoves: Vec<Box<dyn Action>>,
-    wtime: Option<u64>,
-    btime: Option<u64>,
-    winc: Option<u64>,
-    binc: Option<u64>,
-    movestogo: Option<u64>,
-    movetime: Option<u64>,
+    pub(crate) cutoff: SearchCutoff,
+    pub(crate) searchmoves: Vec<Box<dyn Action>>,
+    pub(crate) wtime: Option<u64>,
+    pub(crate) btime: Option<u64>,
+    pub(crate) winc: Option<u64>,
+    pub(crate) binc: Option<u64>,
+    pub(crate) movestogo: Option<u64>,
+    pub(crate) movetime: Option<u64>,
 }
 
 impl Go {
@@ -106,6 +106,10 @@ impl Go {
         }
 
         Ok(go)
+    }
+
+    pub fn new() -> Self {
+        Default::default()
     }
 }
 

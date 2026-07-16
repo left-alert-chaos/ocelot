@@ -5,6 +5,7 @@ mod fen;
 #[allow(dead_code)]
 mod go;
 use crate::physical::*;
+pub use go::*;
 
 pub trait ToUCI {
     fn generate(&self) -> String;
