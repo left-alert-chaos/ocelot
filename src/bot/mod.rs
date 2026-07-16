@@ -12,6 +12,7 @@ pub use uci::*;
 #[allow(dead_code)]
 struct EngineOptions {}
 
+#[allow(dead_code)]
 impl EngineOptions {
     fn new() -> Self {
         Self {}
