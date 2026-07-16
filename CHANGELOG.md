@@ -6,9 +6,11 @@ These are changes that are in the GitHub repo but haven't been released on crate
 
 ### Changes
 - Add castling heuristic for evaluation
-- Add freedom heuristic for evaluation
 - Add queen movement heuristic to discourage premature queen development
 - Fix move generation when the player enters an illegal move in TUI
+- Show current static evaluation in TUI
+- Replace "Engine is thinking..." message with "Ocelot is thinking..."
+- Fix stalemate evaluation in search
 
 ## 0.1.4
 This is a patch finishing the fixes introduced in `0.1.3`.
