@@ -4,6 +4,11 @@ This file will be used to track changes from Ocelot version `0.1.1` onward.
 ## Currently unreleased
 These are changes that are in the GitHub repo but haven't been released on crates.io yet.
 
+There are not currently any unreleased changes.
+
+## 0.2.0
+This is a minor release adding multiple quality-of-life improvements and better position evaluation.
+
 ### Changes
 - Add castling heuristic for evaluation
 - Add queen movement heuristic to discourage premature queen development
