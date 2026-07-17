@@ -116,32 +116,6 @@ impl Ocelot {
         true
     }
 
-    //get the move and play it
-    fn go(&mut self, _command: &str) {
-        let mut tree = SearchTree::new(&self.board, self.depth, self.allowed_time);
-        let mut best_move = tree.safe_best_move();
-        let maybe_best_position = tree.root.best_child;
-
-        //set evaluation
-        if let Some(value) = tree.root.best_value {
-            self.evaluation = value;
-        }
-
-        //get pondered move
-        let ponder = if let Some(best_pos) = *maybe_best_position {
-            if let Some(ponder) = best_pos.best_move {
-                ponder.generate()
-            } else {
-                String::from("0000")
-            }
-        } else {
-            String::from("0000")
-        };
-
-        best_move.perform_on(&mut self.board);
-        println!("bestmove {} ponder {ponder}", best_move.generate());
-    }
-
     fn parsed_go(&mut self, command: &str) {
         //attempt to generate go. if failed, use default
         let go = match Go::parse(command.to_string(), &mut self.board) {
