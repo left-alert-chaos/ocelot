@@ -58,7 +58,7 @@ impl Board {
 
                 //determine score
                 if piece.ptype.value() == 1 {
-                    value += 0.5 * (piece.color.value() as f64);
+                    value += 1.0 * (piece.color.value() as f64);
                 }
             }
         }
