@@ -4,7 +4,14 @@ This file will be used to track changes from Ocelot version `0.1.1` onward.
 ## Currently unreleased
 These are changes that are in the GitHub repo but haven't been released on crates.io yet.
 
-There are not currently any unreleased changes.
+There aren't currently any unreleased changes.
+
+## 0.2.1
+This is a minor patch adding small UI and heuristic updates.
+
+### Changes
+- Display elapsed move time in TUI
+- Double heuristic reward for putting pawns in the center
 
 ## 0.2.0
 This is a minor release adding multiple quality-of-life improvements and better position evaluation.
