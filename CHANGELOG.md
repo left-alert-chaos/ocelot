@@ -12,6 +12,7 @@ This is a minor patch adding small UI and heuristic updates.
 ### Changes
 - Display elapsed move time in TUI
 - Double heuristic reward for putting pawns in the center
+- Remove unused `go` function
 
 ## 0.2.0
 This is a minor release adding multiple quality-of-life improvements and better position evaluation.
