@@ -5,6 +5,7 @@ use crate::bot::Ocelot;
 use crate::bot::safe_parse_action;
 use crate::physical::*;
 use std::io;
+use std::time;
 
 //make board renderable in ascii
 impl Board {
@@ -28,6 +29,7 @@ struct TUIState {
     error: String,
     to_exit: bool,
     engine_last_move: Option<Box<dyn Action>>,
+    elapsed: time::Duration,
 }
 
 impl TUIState {
@@ -60,9 +62,10 @@ impl TUIState {
 
         //draw board and engine move and return cursor to input location
         println!(
-            "{}\x1b[22;70HEngine move: {engine_move}\n\x1b[23;70HEvaluation: {}\x1b[4A",
+            "{}\x1b[22;70HEngine move: {engine_move}\n\x1b[23;70HEvaluation: {}\n\x1b[24;70HTime to move: {:#?}\x1b[5A",
             self.board.draw_ascii(70, 4),
             self.board.evaluation(),
+            self.elapsed,
         );
 
         self.error = String::new();
@@ -90,6 +93,7 @@ pub fn mainloop(depth: i32) {
         error: String::new(),
         to_exit: false,
         engine_last_move: None,
+        elapsed: time::Duration::new(0, 0),
     };
 
     //actual main loop
@@ -158,7 +162,9 @@ pub fn mainloop(depth: i32) {
             state.error = String::from("Ocelot is thinking...");
             state.render();
 
+            let start = time::Instant::now();
             let mut engine_move = state.engine.safe_best_move();
+            state.elapsed = start.elapsed();
             engine_move.perform_on(&mut state.board);
             state.engine.perform_on_self(engine_move.duplicate());
             state.engine_last_move = Some(engine_move);
